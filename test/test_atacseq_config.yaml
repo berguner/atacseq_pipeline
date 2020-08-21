@@ -1,0 +1,40 @@
+# his project config file describes all *project-specific variables*
+# Its primary purpose as as input to Looper, which will submit jobs as appropriate
+# for each sample in the project.
+# But it is also read by other tools, including:
+# - project sample loop (primary purpose)
+# - make_trackhubs scripts to produce web accessible results
+# - stats summary scripts
+# - analysis scripts requiring pointers to metadata, results, and other options.
+
+project_name: BSA_0414_HPCLSK_CDK6
+project_description: BSA_0414_HPCLSK_CDK6
+project_url: https://www.biomedical-sequencing.at/projects/BSA_0414_HPCLSK_CDK6_5446b6bc9fcc46eb9f940c48b5b5912a/
+project_genome: hg38
+sample_annotation: /home/berguener/src/bsfconfiguration/atacseq/BSA_0414_HPCLSK_CDK6_atacseq_samples.csv
+project_dir: /scratch/lab_bsf/projects/BSA_0414_HPCLSK_CDK6/
+
+# MultiQC report
+title: BSA_0414_HPCLSK_CDK6
+intro_text: Quality Control Metrics of the ATAC-seq pipeline
+comment: null
+report_comment: null
+report_header_info: null
+custom_logo: '/home/berguener/src/bsf_multiqc/BSF_logo.png'
+custom_logo_url: 'https://www.biomedical-sequencing.org/'
+custom_logo_title: 'Biomedical Sequencing Facility'
+atacseq_global_hdf: '/data/groups/lab_bsf/resources/global_stats/atacseq/global_atacseq_stats.hdf'
+pca_color_attribute: 'genotype'
+
+
+# UCSC Genome Browser trackhubs:
+trackhub_dir: /scratch/lab_bsf/public_html/projects/BSA_0414_HPCLSK_CDK6_5446b6bc9fcc46eb9f940c48b5b5912a/atacseq_hub
+# url: if you include this, the make_trackhubs will produce a link to your track hub in the project folder.
+trackhub_url: https://www.biomedical-sequencing.at/projects/BSA_0414_HPCLSK_CDK6_5446b6bc9fcc46eb9f940c48b5b5912a/atacseq_hub
+trackhub_sort_order: sample_name
+trackhub_color_by: genotype
+parent_track_name: ATACseq
+trackhub_visibility: full
+trackhub_name: BSA_0414_HPCLSK_CDK6
+trackhub_short_label_column: sample_name
+email: berguener@cemm.at
