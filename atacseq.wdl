@@ -4,9 +4,8 @@ struct Sample {
     String sample_name
     String read_type
     String genome
-    Int genome_size
+    String genome_size
     String raw_bams
-    Int raw_size_mb
 }
 
 
@@ -33,33 +32,35 @@ task bowtie2_align {
     input{
         String output_dir
         String config_dir
-        String sample_name
+        Sample sample
         String bowtie2_index
         String? adapter_fasta
 
         Int cpus = 8
     }
 
-    String sample_dir = "~{output_dir}/~{sample_name}"
-    File sample_tsv  = "~{config_dir}/~{sample_name}.tsv"
-    Map[String, String] sample_map = read_map(sample_tsv)
-    String raw_bams = sample_map['raw_bams']
-    Int raw_size_mb = sample_map['raw_size_mb']
-    Int memory = 6000 + raw_size_mb
-    String interleaved_in = if(sample_map['read_type'] == 'paired') then '--interleaved_in' else ' '
-    String interleaved = if(sample_map['read_type'] == 'paired') then '--interleaved' else ' '
+    String sample_dir = "~{output_dir}/~{sample.sample_name}"
+    File sample_tsv  = "~{config_dir}/~{sample.sample_name}.tsv"
+    #Map[String, String] sample_map = read_map(sample_tsv)
+    String raw_bams = sample.raw_bams #sample_map['raw_bams']
+
+    String interleaved_in = if(sample.read_type == 'paired') then '--interleaved_in' else ' '
+    String interleaved = if(sample.read_type == 'paired') then '--interleaved' else ' '
+
+    #Int raw_size_mb = sample.raw_size_mb #sample_map['raw_size_mb']
+    Int memory = 6000
 
     command {
         [ ! -d "~{output_dir}" ] && mkdir -p ~{output_dir};
         [ ! -d "~{sample_dir}" ] && mkdir -p ~{sample_dir};
 
-        for i in ~{raw_bams}; do samtools fastq $i 2>> "~{sample_dir}/~{sample_name}.samtools.log" ; done | \
-            fastp --stdin ~{interleaved_in} --stdout --html "~{sample_dir}/~{sample_name}.fastp.html" --json "~{sample_dir}/~{sample_name}.fastp.json" 2> "~{sample_dir}/~{sample_name}.fastp.log" | \
-            bowtie2 --very-sensitive --no-discordant -p ~{cpus} --maxins 2000 -x ~{bowtie2_index} --met-file "~{sample_dir}/~{sample_name}.bowtie2.met" ~{interleaved} - 2> "~{sample_dir}/~{sample_name}.txt" | \
-            samblaster --addMateTags 2> "~{sample_dir}/~{sample_name}.samblaster.log" | \
-            samtools sort -o "~{sample_dir}/~{sample_name}.bam" - 2>> "~{sample_dir}/~{sample_name}.samtools.log";
-            samtools index "~{sample_dir}/~{sample_name}.bam" 2>> "~{sample_dir}/~{sample_name}.samtools.log";
-            samtools flagstat "~{sample_dir}/~{sample_name}.bam" > "~{sample_dir}/~{sample_name}.samtools_flagstat.log";
+        for i in ~{raw_bams}; do samtools fastq $i 2>> "~{sample_dir}/~{sample.sample_name}.samtools.log" ; done | \
+            fastp --stdin ~{interleaved_in} --stdout --html "~{sample_dir}/~{sample.sample_name}.fastp.html" --json "~{sample_dir}/~{sample.sample_name}.fastp.json" 2> "~{sample_dir}/~{sample.sample_name}.fastp.log" | \
+            bowtie2 --very-sensitive --no-discordant -p ~{cpus} --maxins 2000 -x ~{bowtie2_index} --met-file "~{sample_dir}/~{sample.sample_name}.bowtie2.met" ~{interleaved} - 2> "~{sample_dir}/~{sample.sample_name}.txt" | \
+            samblaster --addMateTags 2> "~{sample_dir}/~{sample.sample_name}.samblaster.log" | \
+            samtools sort -o "~{sample_dir}/~{sample.sample_name}.bam" - 2>> "~{sample_dir}/~{sample.sample_name}.samtools.log";
+            samtools index "~{sample_dir}/~{sample.sample_name}.bam" 2>> "~{sample_dir}/~{sample.sample_name}.samtools.log";
+            samtools flagstat "~{sample_dir}/~{sample.sample_name}.bam" > "~{sample_dir}/~{sample.sample_name}.samtools_flagstat.log";
     }
 
     runtime {
@@ -70,8 +71,8 @@ task bowtie2_align {
     }
 
     output {
-        File output_bam = "~{sample_dir}/~{sample_name}.bam"
-        File output_bai = "~{sample_dir}/~{sample_name}.bam.bai"
+        File output_bam = "~{sample_dir}/~{sample.sample_name}.bam"
+        File output_bai = "~{sample_dir}/~{sample.sample_name}.bam.bai"
     }
 }
 
@@ -92,13 +93,20 @@ workflow atacseq {
     String output_dir = "~{project_path}/atacseq_results"
     String config_dir = "~{project_path}/config_files"
 
-    scatter(sample in sample_list) {
+    scatter(sample_name in sample_list) {
+        File sample_tsv  = "~{config_dir}/~{sample_name}.tsv"
+        Map[String, String] sample_map = read_map(sample_tsv)
+        Sample sample = { "sample_name": sample_name,
+                            "read_type": sample_map["read_type"],
+                            "raw_bams": sample_map["raw_bams"],
+                            "genome": sample_map["genome"], "genome_size": sample_map["genome_size"]
+                        }
 
         call bowtie2_align {
             input:
                 output_dir = output_dir,
                 config_dir = config_dir,
-                sample_name = sample,
+                sample = sample,
                 bowtie2_index = bowtie2_index,
                 adapter_fasta = adapter_fasta
         }
