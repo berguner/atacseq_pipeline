@@ -1,21 +1,13 @@
-# his project config file describes all *project-specific variables*
-# Its primary purpose as as input to Looper, which will submit jobs as appropriate
-# for each sample in the project.
-# But it is also read by other tools, including:
-# - project sample loop (primary purpose)
-# - make_trackhubs scripts to produce web accessible results
-# - stats summary scripts
-# - analysis scripts requiring pointers to metadata, results, and other options.
-
-project_name: BSA_0414_HPCLSK_CDK6
-project_description: BSA_0414_HPCLSK_CDK6
-project_url: https://www.biomedical-sequencing.at/projects/BSA_0414_HPCLSK_CDK6_5446b6bc9fcc46eb9f940c48b5b5912a/
-project_genome: hg38
-sample_annotation: /home/berguener/src/bsfconfiguration/atacseq/BSA_0414_HPCLSK_CDK6_atacseq_samples.csv
-project_dir: /scratch/lab_bsf/projects/BSA_0414_HPCLSK_CDK6/
+# This project config file describes *project-specific variables*
+project_name: BSA_0000_test_atac
+project_description: BSA_0000_test_atac
+project_url: https://www.biomedical-sequencing.at/projects/BSA_0000_test_atac_5446b6bc9fcc46eb9f940c48b5b5912a/
+sample_annotation: /home/berguener/src/atacseq_pipeline/test/BSA_0000_test_atac_atacseq_sample_annotations.csv
+project_path: /scratch/users/berguener/junk/BSA_0000_test_atac/
+genome: mm10
 
 # MultiQC report
-title: BSA_0414_HPCLSK_CDK6
+title: BSA_0000_test_atac
 intro_text: Quality Control Metrics of the ATAC-seq pipeline
 comment: null
 report_comment: null
@@ -28,13 +20,13 @@ pca_color_attribute: 'genotype'
 
 
 # UCSC Genome Browser trackhubs:
-trackhub_dir: /scratch/lab_bsf/public_html/projects/BSA_0414_HPCLSK_CDK6_5446b6bc9fcc46eb9f940c48b5b5912a/atacseq_hub
+trackhub_dir: /scratch/lab_bsf/public_html/projects/BSA_0000_test_atac_5446b6bc9fcc46eb9f940c48b5b5912a/atacseq_hub
 # url: if you include this, the make_trackhubs will produce a link to your track hub in the project folder.
-trackhub_url: https://www.biomedical-sequencing.at/projects/BSA_0414_HPCLSK_CDK6_5446b6bc9fcc46eb9f940c48b5b5912a/atacseq_hub
+trackhub_url: https://www.biomedical-sequencing.at/projects/BSA_0000_test_atac_5446b6bc9fcc46eb9f940c48b5b5912a/atacseq_hub
 trackhub_sort_order: sample_name
 trackhub_color_by: genotype
 parent_track_name: ATACseq
 trackhub_visibility: full
-trackhub_name: BSA_0414_HPCLSK_CDK6
+trackhub_name: BSA_0000_test_atac
 trackhub_short_label_column: sample_name
 email: berguener@cemm.at

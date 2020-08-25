@@ -12,10 +12,21 @@ blacklisted_regions:
 unique_tss:
     hg38: /data/groups/lab_bock/shared/resources/genomes/hg38/hg38_gencode_tss_unique.bed
     mm10: /data/groups/lab_bock/shared/resources/genomes/mm10/mm10_CCDS_tss_unique.bed
-oracle_peak_regions:
+regulatory_regions:
     hg38: /data/groups/lab_bock/shared/resources/regions/ensembl_regulatory_build/homo_sapiens.GRCh38.Regulatory_Build.regulatory_features.chromosomes_only.20161111.bed
     mm10: /data/groups/lab_bock/shared/resources/regions/ensembl_regulatory_build/mus_musculus.GRCm38.Regulatory_Build.regulatory_features.20161111.sorted.bed
+genome_sizes:
+    hg38: 2747877777
+    mm10: 2407883318
 
+
+data_sources:
+  # specify the ABSOLUTE PATH of input files using variable path expressions
+  # entries correspond to values in the data_source column in sample_annotation table
+  # {variable} can be used to replace environment variables or other sample_annotation columns
+  # If you use {variable} codes, you should quote the field so python can parse it.
+  bsf: /scratch/lab_bsf/samples/{flowcell}/{flowcell}_{lane}_samples/{flowcell}_{lane}#{BSF_name}.bam
+  bsf_test: /scratch/users/berguener/junk/atac_test_data/{flowcell}_{lane}#{BSF_name}.bam
 
 # The following section contains command-line tools used by the pipeline
 tools:
@@ -26,7 +37,7 @@ tools:
   sambamba: sambamba
   trimmomatic: trimmomatic
   skewer: skewer
-  bedtools: /cm/shared/apps/bedtools/2.20.1/bedtools
+  bedtools: bedtools
   bamCoverage: bamCoverage  # from deeptools
   macs2: macs2
   # optional:
