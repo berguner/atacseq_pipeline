@@ -31,7 +31,6 @@ task test_task {
 task bowtie2_align {
     input{
         String output_dir
-        String config_dir
         Sample sample
         String bowtie2_index
         String? adapter_fasta
@@ -40,27 +39,30 @@ task bowtie2_align {
     }
 
     String sample_dir = "~{output_dir}/~{sample.sample_name}"
-    File sample_tsv  = "~{config_dir}/~{sample.sample_name}.tsv"
-    #Map[String, String] sample_map = read_map(sample_tsv)
-    String raw_bams = sample.raw_bams #sample_map['raw_bams']
+    String bam_dir = "~{output_dir}/~{sample.sample_name}/bam"
+    String raw_bams = sample.raw_bams
 
     String interleaved_in = if(sample.read_type == 'paired') then '--interleaved_in' else ' '
     String interleaved = if(sample.read_type == 'paired') then '--interleaved' else ' '
 
     #Int raw_size_mb = sample.raw_size_mb #sample_map['raw_size_mb']
-    Int memory = 6000
+    Int memory = 16000
 
     command {
         [ ! -d "~{output_dir}" ] && mkdir -p ~{output_dir};
         [ ! -d "~{sample_dir}" ] && mkdir -p ~{sample_dir};
+        [ ! -d "~{bam_dir}" ] && mkdir -p ~{bam_dir};
 
-        for i in ~{raw_bams}; do samtools fastq $i 2>> "~{sample_dir}/~{sample.sample_name}.samtools.log" ; done | \
-            fastp --stdin ~{interleaved_in} --stdout --html "~{sample_dir}/~{sample.sample_name}.fastp.html" --json "~{sample_dir}/~{sample.sample_name}.fastp.json" 2> "~{sample_dir}/~{sample.sample_name}.fastp.log" | \
-            bowtie2 --very-sensitive --no-discordant -p ~{cpus} --maxins 2000 -x ~{bowtie2_index} --met-file "~{sample_dir}/~{sample.sample_name}.bowtie2.met" ~{interleaved} - 2> "~{sample_dir}/~{sample.sample_name}.txt" | \
-            samblaster --addMateTags 2> "~{sample_dir}/~{sample.sample_name}.samblaster.log" | \
-            samtools sort -o "~{sample_dir}/~{sample.sample_name}.bam" - 2>> "~{sample_dir}/~{sample.sample_name}.samtools.log";
-            samtools index "~{sample_dir}/~{sample.sample_name}.bam" 2>> "~{sample_dir}/~{sample.sample_name}.samtools.log";
-            samtools flagstat "~{sample_dir}/~{sample.sample_name}.bam" > "~{sample_dir}/~{sample.sample_name}.samtools_flagstat.log";
+        for i in ~{raw_bams}; do samtools fastq $i 2>> "~{bam_dir}/~{sample.sample_name}.samtools.log" ; done | \
+            fastp --stdin ~{interleaved_in} --stdout --html "~{bam_dir}/~{sample.sample_name}.fastp.html" --json "~{bam_dir}/~{sample.sample_name}.fastp.json" 2> "~{bam_dir}/~{sample.sample_name}.fastp.log" | \
+            bowtie2 --very-sensitive --no-discordant -p ~{cpus} --maxins 2000 -x ~{bowtie2_index} --met-file "~{bam_dir}/~{sample.sample_name}.bowtie2.met" ~{interleaved} - 2> "~{bam_dir}/~{sample.sample_name}.txt" | \
+            samblaster --addMateTags 2> "~{bam_dir}/~{sample.sample_name}.samblaster.log" | \
+            samtools sort -o "~{bam_dir}/~{sample.sample_name}.bam" - 2>> "~{bam_dir}/~{sample.sample_name}.samtools.log";
+            samtools index "~{bam_dir}/~{sample.sample_name}.bam" 2>> "~{bam_dir}/~{sample.sample_name}.samtools.log";
+        #if [ $? -eq "0" ]; then
+            samtools flagstat "~{bam_dir}/~{sample.sample_name}.bam" > "~{bam_dir}/~{sample.sample_name}.samtools_flagstat.log";
+        #else
+        #    exit $?;
     }
 
     runtime {
@@ -71,8 +73,46 @@ task bowtie2_align {
     }
 
     output {
-        File output_bam = "~{sample_dir}/~{sample.sample_name}.bam"
-        File output_bai = "~{sample_dir}/~{sample.sample_name}.bam.bai"
+        File output_bam = "~{bam_dir}/~{sample.sample_name}.bam"
+        File output_bai = "~{bam_dir}/~{sample.sample_name}.bam.bai"
+        File flagstat = "~{bam_dir}/~{sample.sample_name}.samtools_flagstat.log"
+    }
+}
+
+task macs2_peak_call {
+    input {
+        String output_dir
+        Sample sample
+
+        File input_bam
+        File input_bai
+    }
+
+    String sample_dir = "~{output_dir}/~{sample.sample_name}"
+    String peaks_dir = "~{output_dir}/~{sample.sample_name}/peaks"
+
+    command {
+        [ ! -d "~{output_dir}" ] && mkdir -p ~{output_dir};
+        [ ! -d "~{sample_dir}" ] && mkdir -p ~{sample_dir};
+        [ ! -d "~{peaks_dir}" ] && mkdir -p ~{peaks_dir};
+
+        macs2 callpeak -t ~{input_bam} \
+            --nomodel --extsize 147 -g ~{sample.genome_size} \
+            -n ~{sample.sample_name} \
+            --outdir ~{peaks_dir} > "~{peaks_dir}/~{sample.sample_name}.macs2.log" 2>&1;
+
+    }
+
+    runtime {
+        rt_cpus: 2
+        rt_mem: 8000
+        rt_queue: "shortq"
+        rt_time: "12:00:00"
+    }
+    output {
+        File peak_calls = "~{peaks_dir}/~{sample.sample_name}.narrowPeak"
+        File macs2_xls = "~{peaks_dir}/~{sample.sample_name}.xls"
+        File summits_bed = "~{peaks_dir}/~{sample.sample_name}_summits.bed"
     }
 }
 
@@ -105,10 +145,16 @@ workflow atacseq {
         call bowtie2_align {
             input:
                 output_dir = output_dir,
-                config_dir = config_dir,
                 sample = sample,
                 bowtie2_index = bowtie2_index,
                 adapter_fasta = adapter_fasta
+        }
+        call macs2_peak_call {
+            input:
+                output_dir = output_dir,
+                sample = sample,
+                input_bam = bowtie2_align.output_bam,
+                input_bai = bowtie2_align.output_bai
         }
     }
 }
