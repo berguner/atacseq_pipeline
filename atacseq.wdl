@@ -97,7 +97,7 @@ task macs2_peak_call {
         [ ! -d "~{peaks_dir}" ] && mkdir -p ~{peaks_dir};
 
         macs2 callpeak -t ~{input_bam} \
-            --nomodel --extsize 147 -g ~{sample.genome_size} \
+            --nomodel --keep-dup auto --extsize 147 -g ~{sample.genome_size} \
             -n ~{sample.sample_name} \
             --outdir ~{peaks_dir} > "~{peaks_dir}/~{sample.sample_name}.macs2.log" 2>&1;
 
@@ -105,14 +105,47 @@ task macs2_peak_call {
 
     runtime {
         rt_cpus: 2
-        rt_mem: 8000
+        rt_mem: 4000
         rt_queue: "shortq"
         rt_time: "12:00:00"
     }
     output {
-        File peak_calls = "~{peaks_dir}/~{sample.sample_name}.narrowPeak"
-        File macs2_xls = "~{peaks_dir}/~{sample.sample_name}.xls"
+        File peak_calls = "~{peaks_dir}/~{sample.sample_name}_peaks.narrowPeak"
+        File macs2_xls = "~{peaks_dir}/~{sample.sample_name}_peaks.xls"
         File summits_bed = "~{peaks_dir}/~{sample.sample_name}_summits.bed"
+    }
+}
+
+
+task misc_tasks {
+    input {
+        String project_dir
+        Sample sample
+
+        File input_bam
+        File input_bai
+    }
+
+    String hub_dir = "~{project_dir}/atacseq_hub"
+
+    command {
+        [ ! -d "~{hub_dir}" ] && mkdir -p ~{hub_dir};
+
+        bamCoverage --bam ~{input_bam} \
+            -p max --binSize 10  --normalizeUsing RPGC \
+            --effectiveGenomeSize ~{sample.genome_size} --extendReads 175 \
+            -o "~{hub_dir}/~{sample.sample_name}.bigWig" > "~{hub_dir}/~{sample.sample_name}.bigWig.log" 2>&1;
+    }
+
+    runtime {
+        rt_cpus: 2
+        rt_mem: 4000
+        rt_queue: "shortq"
+        rt_time: "12:00:00"
+    }
+
+    output {
+        File bigWig = "~{hub_dir}/~{sample.sample_name}.bigWig"
     }
 }
 
@@ -149,9 +182,18 @@ workflow atacseq {
                 bowtie2_index = bowtie2_index,
                 adapter_fasta = adapter_fasta
         }
+
         call macs2_peak_call {
             input:
                 output_dir = output_dir,
+                sample = sample,
+                input_bam = bowtie2_align.output_bam,
+                input_bai = bowtie2_align.output_bai
+        }
+
+        call misc_tasks {
+            input:
+                project_dir = project_path,
                 sample = sample,
                 input_bam = bowtie2_align.output_bam,
                 input_bai = bowtie2_align.output_bai
