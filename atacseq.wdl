@@ -34,6 +34,8 @@ task bowtie2_align {
         Sample sample
         String bowtie2_index
         String? adapter_fasta
+        String whitelist
+        String chrM
 
         Int cpus = 8
     }
@@ -42,13 +44,14 @@ task bowtie2_align {
     String bam_dir = "~{output_dir}/~{sample.sample_name}/bam"
     String raw_bams = sample.raw_bams
 
-    String interleaved_in = if(sample.read_type == 'paired') then '--interleaved_in' else ' '
-    String interleaved = if(sample.read_type == 'paired') then '--interleaved' else ' '
+    String interleaved_in = if(sample.read_type == "paired") then "--interleaved_in" else " "
+    String interleaved = if(sample.read_type == "paired") then "--interleaved" else " "
+    String filter = if(sample.read_type == "paired") then "-q 30 -F 2316 -f 2 -L ~{whitelist}" else "-q 30 -F 2316 -L ~{whitelist}"
 
     #Int raw_size_mb = sample.raw_size_mb #sample_map['raw_size_mb']
     Int memory = 16000
 
-    command {
+    command <<<
         [ ! -d "~{output_dir}" ] && mkdir -p ~{output_dir};
         [ ! -d "~{sample_dir}" ] && mkdir -p ~{sample_dir};
         [ ! -d "~{bam_dir}" ] && mkdir -p ~{bam_dir};
@@ -58,12 +61,15 @@ task bowtie2_align {
             bowtie2 --very-sensitive --no-discordant -p ~{cpus} --maxins 2000 -x ~{bowtie2_index} --met-file "~{bam_dir}/~{sample.sample_name}.bowtie2.met" ~{interleaved} - 2> "~{bam_dir}/~{sample.sample_name}.txt" | \
             samblaster --addMateTags 2> "~{bam_dir}/~{sample.sample_name}.samblaster.log" | \
             samtools sort -o "~{bam_dir}/~{sample.sample_name}.bam" - 2>> "~{bam_dir}/~{sample.sample_name}.samtools.log";
-            samtools index "~{bam_dir}/~{sample.sample_name}.bam" 2>> "~{bam_dir}/~{sample.sample_name}.samtools.log";
-        #if [ $? -eq "0" ]; then
-            samtools flagstat "~{bam_dir}/~{sample.sample_name}.bam" > "~{bam_dir}/~{sample.sample_name}.samtools_flagstat.log";
-        #else
-        #    exit $?;
-    }
+
+        samtools index "~{bam_dir}/~{sample.sample_name}.bam" 2>> "~{bam_dir}/~{sample.sample_name}.samtools.log";
+        samtools idxstats "~{bam_dir}/~{sample.sample_name}.bam" | awk '{ sum += $3 + $4; if($1 == "~{chrM}") { mito_count = $3; }}END{ print "mitochondrial_fraction\t"mito_count/sum }' > "~{sample_dir}/~{sample.sample_name}.stats.tsv";
+
+        samtools view ~{filter} -o "~{bam_dir}/~{sample.sample_name}.filtered.bam" "~{bam_dir}/~{sample.sample_name}.bam";
+        samtools index "~{bam_dir}/~{sample.sample_name}.filtered.bam";
+
+        #samtools flagstat "~{bam_dir}/~{sample.sample_name}.bam" > "~{bam_dir}/~{sample.sample_name}.samtools_flagstat.log";
+    >>>
 
     runtime {
         rt_cpus: cpus
@@ -75,7 +81,8 @@ task bowtie2_align {
     output {
         File output_bam = "~{bam_dir}/~{sample.sample_name}.bam"
         File output_bai = "~{bam_dir}/~{sample.sample_name}.bam.bai"
-        File flagstat = "~{bam_dir}/~{sample.sample_name}.samtools_flagstat.log"
+        File filtered_bam = "~{bam_dir}/~{sample.sample_name}.filtered.bam"
+        File filtered_bai = "~{bam_dir}/~{sample.sample_name}.filtered.bam.bai"
     }
 }
 
@@ -90,13 +97,14 @@ task macs2_peak_call {
 
     String sample_dir = "~{output_dir}/~{sample.sample_name}"
     String peaks_dir = "~{output_dir}/~{sample.sample_name}/peaks"
+    String format = if(sample.read_type == 'paired') then '--format BAMPE' else '--format BAM'
 
     command {
         [ ! -d "~{output_dir}" ] && mkdir -p ~{output_dir};
         [ ! -d "~{sample_dir}" ] && mkdir -p ~{sample_dir};
         [ ! -d "~{peaks_dir}" ] && mkdir -p ~{peaks_dir};
 
-        macs2 callpeak -t ~{input_bam} \
+        macs2 callpeak -t ~{input_bam} ~{format} \
             --nomodel --keep-dup auto --extsize 147 -g ~{sample.genome_size} \
             -n ~{sample.sample_name} \
             --outdir ~{peaks_dir} > "~{peaks_dir}/~{sample.sample_name}.macs2.log" 2>&1;
@@ -156,11 +164,13 @@ workflow atacseq {
         String genome
         String regulatory_regions
         String blacklisted_regions
+        String whitelisted_regions
         String chromosome_sizes
         String unique_tss
         Array[String] sample_list
         String bowtie2_index
         String adapter_fasta
+        String mitochondria_name
     }
 
     String output_dir = "~{project_path}/atacseq_results"
@@ -180,23 +190,25 @@ workflow atacseq {
                 output_dir = output_dir,
                 sample = sample,
                 bowtie2_index = bowtie2_index,
-                adapter_fasta = adapter_fasta
+                adapter_fasta = adapter_fasta,
+                whitelist = whitelisted_regions,
+                chrM = mitochondria_name
         }
 
         call macs2_peak_call {
             input:
                 output_dir = output_dir,
                 sample = sample,
-                input_bam = bowtie2_align.output_bam,
-                input_bai = bowtie2_align.output_bai
+                input_bam = bowtie2_align.filtered_bam,
+                input_bai = bowtie2_align.filtered_bai
         }
 
         call misc_tasks {
             input:
                 project_dir = project_path,
                 sample = sample,
-                input_bam = bowtie2_align.output_bam,
-                input_bai = bowtie2_align.output_bai
+                input_bam = bowtie2_align.filtered_bam,
+                input_bai = bowtie2_align.filtered_bai
         }
     }
 }

@@ -71,7 +71,9 @@ if __name__ == '__main__':
                    'atacseq.bowtie2_index': config['bowtie2_index'][project_genome],
                    'atacseq.chromosome_sizes': config['chromosome_sizes'][project_genome],
                    'atacseq.blacklisted_regions': config['blacklisted_regions'][project_genome],
+                   'atacseq.whitelisted_regions': config['whitelisted_regions'][project_genome],
                    'atacseq.unique_tss': config['unique_tss'][project_genome],
+                   'atacseq.mitochondria_name': config['mitochondria_names'][project_genome],
                    'atacseq.regulatory_regions': config['regulatory_regions'][project_genome]
                    }
 
