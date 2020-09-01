@@ -1,7 +1,8 @@
 # This project config file describes *project-specific variables*
 project_name: BSA_0000_test_atac
+project_uuid: BSA_0000_test_atac_5446b6bc9fcc46eb9f940c48b5b5912a
 project_description: BSA_0000_test_atac
-project_url: https://www.biomedical-sequencing.at/projects/BSA_0000_test_atac_5446b6bc9fcc46eb9f940c48b5b5912a/
+base_url: https://www.biomedical-sequencing.at/projects/
 sample_annotation: /home/berguener/src/atacseq_pipeline/test/BSA_0000_test_atac_atacseq_sample_annotations.csv
 project_path: /scratch/users/berguener/junk/BSA_0000_test_atac/
 genome: mm10
@@ -20,9 +21,7 @@ pca_color_attribute: 'genotype'
 
 
 # UCSC Genome Browser trackhubs:
-trackhub_dir: /scratch/lab_bsf/public_html/projects/BSA_0000_test_atac_5446b6bc9fcc46eb9f940c48b5b5912a/atacseq_hub
-# url: if you include this, the make_trackhubs will produce a link to your track hub in the project folder.
-trackhub_url: https://www.biomedical-sequencing.at/projects/BSA_0000_test_atac_5446b6bc9fcc46eb9f940c48b5b5912a/atacseq_hub
+trackhub_dir: atacseq_hub
 trackhub_sort_order: sample_name
 trackhub_color_by: genotype
 parent_track_name: ATACseq

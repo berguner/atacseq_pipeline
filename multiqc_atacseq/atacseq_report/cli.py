@@ -9,7 +9,7 @@ http://click.pocoo.org/5/
 import click
 
 # Sets config.kwargs['disable_plugin'] to True if specified (will be False otherwise)
-disable_bsf_reports = click.option('--disable-bsf-reports', 'disable_bsf_reports',
+disable_atacseq_report = click.option('--disable-atacseq-report', 'disable_atacseq_report',
     is_flag = True,
-    help = "Disable the BSF reports MultiQC plugin on this run"
+    help = "Disable the BSF ATAC-seq pipeline report"
 )
