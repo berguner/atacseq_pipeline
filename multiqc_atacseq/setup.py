@@ -22,7 +22,8 @@ setup(
     include_package_data = True,
     install_requires =[
         'multiqc',
-        'click'
+        'click',
+        'tables'
     ],
     entry_points = {
         'multiqc.modules.v1': [

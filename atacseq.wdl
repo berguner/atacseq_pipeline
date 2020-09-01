@@ -110,12 +110,15 @@ task macs2_peak_call {
             -n ~{sample.sample_name} \
             --outdir ~{peaks_dir} > "~{peaks_dir}/~{sample.sample_name}.macs2.log" 2>&1;
 
+        cat ~{peaks_dir}/~{sample.sample_name}_peaks.narrowPeak | wc -l | \
+            awk '{print "peaks\t" $1}' >> "~{sample_dir}/~{sample.sample_name}.stats.tsv"
+
         TOTAL_READS=`samtools idxstats ~{input_bam} | awk '{sum += $3}END{print sum}'`;
         samtools view -c -L "~{peaks_dir}/~{sample.sample_name}_peaks.narrowPeak" ~{input_bam} | \
             awk -v total=$TOTAL_READS '{print "frip\t" $1/total}' >> "~{sample_dir}/~{sample.sample_name}.stats.tsv";
 
         samtools view -c -L ~{regulatory_regions} ~{input_bam} | \
-            awk -v total=$TOTAL_READS '{print "regulatory_frip\t" $1/total}' >> "~{sample_dir}/~{sample.sample_name}.stats.tsv";
+            awk -v total=$TOTAL_READS '{print "regulatory_fraction\t" $1/total}' >> "~{sample_dir}/~{sample.sample_name}.stats.tsv";
     >>>
 
     runtime {

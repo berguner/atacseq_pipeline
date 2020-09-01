@@ -38,7 +38,7 @@ def atacseq_report_execution_start():
         config.update_dict(config.sp, {'atacseq': {'fn': '*.stats.tsv', 'contents': 'frip'}})
         log.info("updated config.sp for atacseq")
     if 'atacseq/tss' not in config.sp:
-        config.update_dict(config.sp, {'atacseq/tss': {'fn': '*.tss_histogram.csv', 'contents': 'count'}})
+        config.update_dict(config.sp, {'atacseq/tss': {'fn': '*TSS.csv', 'contents': 'count'}})
 
     # Create symlink for the web server
     if hasattr(config, 'base_url') and hasattr(config, 'project_uuid'):
@@ -49,7 +49,7 @@ def atacseq_report_execution_start():
             # The symlink has to be relative so that the web server can locate the project folder
             relative_path = os.path.relpath(config.project_path)
             os.symlink(relative_path, config.project_uuid)
-        log.info('## You can access the project report from: ##\n{}\n'.format(os.path.join(config.project_url,
+        log.info('## You can access the project report from: ##\n{}\n'.format(os.path.join(project_url,
                                                                                           'atacseq_report',
                                                                                           'multiqc_report.html')))
     else:
@@ -78,44 +78,43 @@ def atacseq_report_execution_start():
                                            'atacseq_results',
                                            sample_name,
                                            '{}.stats.tsv'.format(sample_name))
-                if not os.path.exists('{}.stats.tsv'.format(sample_name)):
+                if not os.path.islink('{}.stats.tsv'.format(sample_name)):
                     os.symlink(source_path, '{}.stats.tsv'.format(sample_name), )
                 source_path = os.path.join('../',
                                         'atacseq_results',
                                         sample_name,
-                                        'tss',
                                         '{}.tss_histogram.csv'.format(sample_name))
-                if not os.path.exists('{}_TSS.csv'.format(sample_name)):
+                if not os.path.islink('{}_TSS.csv'.format(sample_name)):
                     os.symlink(source_path, '{}_TSS.csv'.format(sample_name))
                 source_path = os.path.join('../',
-                                           'atacseq_results', 'mapped',
-                                           sample_name,
+                                           'atacseq_results',
+                                           sample_name, 'mapped',
                                            '{}.txt'.format(sample_name))
-                if not os.path.exists('{}.txt'.format(sample_name)):
+                if not os.path.islink('{}.txt'.format(sample_name)):
                     os.symlink(source_path, '{}.txt'.format(sample_name))
                 source_path = os.path.join('../',
-                                        'atacseq_results', 'mapped',
-                                        sample_name,
+                                        'atacseq_results',
+                                        sample_name, 'mapped',
                                         '{}.fastp.json'.format(sample_name))
-                if not os.path.exists('{}.fastp.json'.format(sample_name)):
+                if not os.path.islink('{}.fastp.json'.format(sample_name)):
                     os.symlink(source_path, '{}.fastp.json'.format(sample_name))
                 source_path = os.path.join('../',
-                                          'atacseq_results', 'mapped',
-                                          sample_name,
+                                          'atacseq_results',
+                                          sample_name, 'mapped',
                                           '{}.samblaster.log'.format(sample_name))
-                if not os.path.exists('{}.samblaster.log'.format(sample_name)):
+                if not os.path.islink('{}.samblaster.log'.format(sample_name)):
                     os.symlink(source_path, '{}.samblaster.log'.format(sample_name))
                 source_path = os.path.join('../',
-                                           'atacseq_results', 'mapped',
-                                           sample_name,
-                                           '{}.samtools.log'.format(sample_name))
-                if not os.path.exists('{}.samtools.log'.format(sample_name)):
-                    os.symlink(source_path, '{}.samtools.log'.format(sample_name))
+                                           'atacseq_results',
+                                           sample_name, 'mapped',
+                                           '{}.samtools_flagstat.log'.format(sample_name))
+                if not os.path.islink('{}.samtools_flagstat.log'.format(sample_name)):
+                    os.symlink(source_path, '{}.samtools_flagstat.log'.format(sample_name))
                 source_path = os.path.join('../',
-                                           'atacseq_results', 'peaks',
-                                           sample_name,
+                                           'atacseq_results',
+                                           sample_name, 'peaks',
                                            '{}.macs2.log'.format(sample_name))
-                if not os.path.exists('{}.macs2.log'.format(sample_name)):
+                if not os.path.islink('{}.macs2.log'.format(sample_name)):
                     os.symlink(source_path, '{}.macs2.log'.format(sample_name))
             # Create UCSC track hub
             if hasattr(config, 'trackhub_dir'):
@@ -147,7 +146,7 @@ def atacseq_report_execution_start():
                     hub_file.write('\n'.join(hub_text))
 
                 trackdb_file_path = os.path.join(hub_dir,
-                                                 config.trackhubs['genome'],
+                                                 config.genome,
                                                  'trackDb.txt')
                 with open(trackdb_file_path, 'w') as trackdb_file:
                     colors = ['166,206,227', '31,120,180', '51,160,44', '251,154,153', '227,26,28',
@@ -176,7 +175,7 @@ def atacseq_report_execution_start():
                                  'shortLabel {}'.format(short_label),
                                  'longLabel {}'.format(sample_name),
                                  'bigDataUrl {}.bigWig'.format(sample_name),
-                                 'parent {} on'.format(config.trackhubs['hub_name']),
+                                 'parent {} on'.format(config.trackhub_name),
                                  'type bigWig', 'windowingFunction mean',
                                  'color {}'.format(track_color),
                                  '', '']

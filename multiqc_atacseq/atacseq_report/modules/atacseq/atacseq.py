@@ -27,13 +27,13 @@ class MultiqcModule(BaseMultiqcModule):
 
     def __init__(self):
         # Halt execution if we've disabled the plugin
-        if config.kwargs.get('disable_bsf_reports', True):
+        if config.kwargs.get('disable_atacseq_report', True):
             return None
 
         # Initialise the parent object
         super(MultiqcModule, self).__init__(name='ATAC-seq Pipeline', anchor='atacseq',
-                                            href='https://github.com/epigen/open_pipelines/blob/master/pipelines/atacseq.md',
-                                            info="The ATAC-seq pipeline processes ATAC-seq and DNAse-seq data.")
+                                            href='https://github.com/berguner/atacseq_pipeline',
+                                            info="The ATAC-seq pipeline processes ATAC-seq data.")
         log.info('Initialized atacseq module')
         # Parse ATAC-seq stats for each sample
         self.atacseq_data = dict()
@@ -57,7 +57,7 @@ class MultiqcModule(BaseMultiqcModule):
         self.atacseq_tss_data = self.ignore_samples(self.atacseq_tss_data)
 
         # Load the sample annotation sheet
-        sample_sas_path = config.metadata['sample_annotation']
+        sample_sas_path = config.sample_annotation
         sample_sas = csv.DictReader(open(sample_sas_path, 'r'))
         self.sample_sas_dict = {}
         for k in sample_sas:
@@ -71,15 +71,15 @@ class MultiqcModule(BaseMultiqcModule):
                 self.pairedSampleExists = True
             self.organism = self.sample_sas_dict[sample]['organism']
 
-        # Set the color palette for PCA plot
-        self.attribute_colors = {}
-        self.color_attribute = config.pca_color_attribute
-        for s in self.sample_sas_dict:
-            if self.sample_sas_dict[s][self.color_attribute] not in self.attribute_colors:
-                self.attribute_colors[self.sample_sas_dict[s][self.color_attribute]] = '#%02x%02x%02x' % tuple(
-                    np.random.choice(range(256), size=3))
+        # # Set the color palette for PCA plot
+        # self.attribute_colors = {}
+        # self.color_attribute = config.pca_color_attribute
+        # for s in self.sample_sas_dict:
+        #     if self.sample_sas_dict[s][self.color_attribute] not in self.attribute_colors:
+        #         self.attribute_colors[self.sample_sas_dict[s][self.color_attribute]] = '#%02x%02x%02x' % tuple(
+        #             np.random.choice(range(256), size=3))
         # Get the genome version
-        self.genome_version = config.genomes[self.organism]
+        self.genome_version = config.genome
 
         # Load global statistics
         self.global_stats = pd.read_hdf(config.atacseq_global_hdf)
@@ -90,15 +90,15 @@ class MultiqcModule(BaseMultiqcModule):
         # Add download links table
         self.add_download_table()
 
-        # Add FRiP scatter plot
-        self.add_frip_plot()
+        # # Add FRiP scatter plot
+        # self.add_frip_plot()
 
         # Add TSS line graph
         self.add_tss_plot()
 
-        # Add PCA plots
-        self.pca_dict = {}
-        self.add_pca_plots()
+        # # Add PCA plots
+        # self.pca_dict = {}
+        # self.add_pca_plots()
 
     def parse_atacseq_stats(self, f):
         data = {}
@@ -130,7 +130,7 @@ class MultiqcModule(BaseMultiqcModule):
         #global_df = global_df.astype('float')
         for sample_name in self.atacseq_data:
             data[sample_name] = {}
-            if self.color_attribute in self.sample_sas_dict[sample_name]:
+            if hasattr(self, 'color_attribute') and self.color_attribute in self.sample_sas_dict[sample_name]:
                 data[sample_name][self.color_attribute] = self.sample_sas_dict[sample_name][self.color_attribute]
             if 'NSC' in self.atacseq_data[sample_name] and self.atacseq_data[sample_name]['NSC'] != 'nan':
                 try:
@@ -175,14 +175,14 @@ class MultiqcModule(BaseMultiqcModule):
                 except:
                     value = None
                 data[sample_name]['frip'] = value
-            if 'oracle_frip' in self.atacseq_data[sample_name]:
+            if 'regulatory_frip' in self.atacseq_data[sample_name]:
                 try:
-                    value = float(self.atacseq_data[sample_name]['oracle_frip'])
+                    value = float(self.atacseq_data[sample_name]['regulatory_frip'])
                 except:
                     value = None
-                data[sample_name]['oracle_frip'] = value
+                data[sample_name]['regulatory_fraction'] = value
         headers = OrderedDict()
-        if self.color_attribute:
+        if hasattr(self, "color_attribute"):
             headers[self.color_attribute] = {
                 'description': self.color_attribute,
                 'title': self.color_attribute,
@@ -240,9 +240,9 @@ class MultiqcModule(BaseMultiqcModule):
             'max': 1.0,
             'format': '{:.2f}'
         }
-        headers['oracle_frip'] = {
+        headers['regulatory_fraction'] = {
             'description': 'Fraction of Reads in regulatory regions',
-            'title': 'Oracle FRiP',
+            'title': 'Regulatory Fraction',
             'scale': 'Reds-rev',
             'min': 0.0,
             'max': 1.0,
@@ -260,7 +260,7 @@ class MultiqcModule(BaseMultiqcModule):
             'marker_size': 3
         }
         frip_plot_data = [self.generate_frip_plot_data(frip_type='frip'),
-                          self.generate_frip_plot_data(frip_type='oracle_frip')]
+                          self.generate_frip_plot_data(frip_type='regulatory_fraction')]
         self.add_section(
             name='Fraction of Reads in Peaks',
             anchor='atacseq_frip',
@@ -330,14 +330,9 @@ class MultiqcModule(BaseMultiqcModule):
 
     def add_download_table(self):
         # Create a table with download links to various files
-        results_url = config.project_url
-        results_path = config.metadata['output_dir']
-        if config.metadata['results_subdir'] and len(config.metadata['results_subdir'].split('/')) < 2:
-            results_url = os.path.join(results_url, config.metadata['results_subdir'])
-            results_path = os.path.join(results_path, config.metadata['results_subdir'])
-        elif config.metadata['results_subdir'] and len(config.metadata['results_subdir'].split('/')) > 1:
-            results_url = os.path.join(results_url, config.metadata['results_subdir'].split('/')[-1])
-            results_path = config.metadata['results_subdir']
+        results_url = os.path.join(config.base_url, config.project_uuid, 'atacseq_results')
+        project_url = os.path.join(config.base_url, config.project_uuid)
+        results_path =os.path.join(config.project_path, 'atacseq_results')
 
         # Configuration for the MultiQC table
         table_config = {
@@ -345,7 +340,7 @@ class MultiqcModule(BaseMultiqcModule):
             'id': 'download_links',  # ID used for the table
             'table_title': 'Download ATAC-seq data',  # Title of the table. Used in the column config modal
             'save_file': False,  # Whether to save the table data to a file
-            'raw_data_fn': 'multiqc_download_links_table',  # File basename to use for raw data file
+            #'raw_data_fn': 'multiqc_download_links_table',  # File basename to use for raw data file
             'sortRows': False,  # Whether to sort rows alphabetically
             'col1_header': 'Sample Name',  # The header used for the first column
             'no_beeswarm': True,
@@ -354,11 +349,11 @@ class MultiqcModule(BaseMultiqcModule):
 
         # Configuration for the header row
         headers = OrderedDict()
-        headers['raw_data'] = {
-            'title': 'Raw Data',
-            'description': 'Raw sequence data in BAM format',
-            'scale': False
-        }
+        # headers['raw_data'] = {
+        #     'title': 'Raw Data',
+        #     'description': 'Raw sequence data in BAM format',
+        #     'scale': False
+        # }
         headers['BAM'] = {
             'title': 'BAM',
             'description': 'Bowtie2 alignment results in BAM format',
@@ -407,32 +402,32 @@ class MultiqcModule(BaseMultiqcModule):
         for sample_name in self.atacseq_data:
             sample_names.append(sample_name)
             # generate links list for loading them on IGV
-            igv_link = config.project_url + '/atacseq_hub/' + self.genome_version + '/' + sample_name + '.bigWig'
+            igv_link = project_url + '/atacseq_hub/' + self.genome_version + '/' + sample_name + '.bigWig'
             igv_links.append(igv_link)
             # Generate the URL for the raw bam file
-            raw_bam_path = os.path.join(results_path, sample_name, 'unmapped', sample_name + '.bam')
-            bsf_raw_bam_path = '../../../../../samples/{}/{}_{}_samples/{}_{}#{}.bam'.format(
-                self.sample_sas_dict[sample_name]['flowcell'],
-                self.sample_sas_dict[sample_name]['flowcell'],
-                self.sample_sas_dict[sample_name]['lane'],
-                self.sample_sas_dict[sample_name]['flowcell'],
-                self.sample_sas_dict[sample_name]['lane'],
-                self.sample_sas_dict[sample_name]['BSF_name']
-            )
-            # Create the symlink for the raw bam file in the file system
-            if not os.path.exists(raw_bam_path):# and os.path.exists(bsf_raw_bam_path):
-                os.symlink(bsf_raw_bam_path, raw_bam_path)
-            # Create and put the URLs into the download table
+            # raw_bam_path = os.path.join(results_path, sample_name, 'unmapped', sample_name + '.bam')
+            # bsf_raw_bam_path = '../../../../../samples/{}/{}_{}_samples/{}_{}#{}.bam'.format(
+            #     self.sample_sas_dict[sample_name]['flowcell'],
+            #     self.sample_sas_dict[sample_name]['flowcell'],
+            #     self.sample_sas_dict[sample_name]['lane'],
+            #     self.sample_sas_dict[sample_name]['flowcell'],
+            #     self.sample_sas_dict[sample_name]['lane'],
+            #     self.sample_sas_dict[sample_name]['BSF_name']
+            # )
+            # # Create the symlink for the raw bam file in the file system
+            # if not os.path.exists(raw_bam_path):# and os.path.exists(bsf_raw_bam_path):
+            #     os.symlink(bsf_raw_bam_path, raw_bam_path)
+            # # Create and put the URLs into the download table
             sample_raw_bam_url = '{}/{}/unmapped/{}.bam'.format(results_url, sample_name, sample_name)
-            sample_bam_url = '{}/{}/mapped/{}.trimmed.bowtie2.bam'.format(results_url, sample_name, sample_name)
-            sample_bai_url = '{}/{}/mapped/{}.trimmed.bowtie2.bam.bai'.format(results_url, sample_name, sample_name)
-            sample_filtered_bam_url = '{}/{}/mapped/{}.trimmed.bowtie2.filtered.bam'.format(results_url, sample_name, sample_name)
-            sample_filtered_bai_url = '{}/{}/mapped/{}.trimmed.bowtie2.filtered.bam.bai'.format(results_url, sample_name, sample_name)
+            sample_bam_url = '{}/{}/mapped/{}.bam'.format(results_url, sample_name, sample_name)
+            sample_bai_url = '{}/{}/mapped/{}.bam.bai'.format(results_url, sample_name, sample_name)
+            sample_filtered_bam_url = '{}/{}/mapped/{}.filtered.bam'.format(results_url, sample_name, sample_name)
+            sample_filtered_bai_url = '{}/{}/mapped/{}.filtered.bam.bai'.format(results_url, sample_name, sample_name)
             sample_peaks_url = '{}/{}/peaks/{}_peaks.narrowPeak'.format(results_url, sample_name, sample_name)
             sample_summits_url = '{}/{}/peaks/{}_summits.bed'.format(results_url, sample_name, sample_name)
-            sample_bigwig_url = '{}/atacseq_hub/{}.bigWig'.format(config.project_url, sample_name)
+            sample_bigwig_url = '{}/atacseq_hub/{}.bigWig'.format(project_url, sample_name)
             data[sample_name] = {
-                'raw_data': '<a href=\"{}\">{} raw</a>'.format(sample_raw_bam_url, sample_name),
+            #    'raw_data': '<a href=\"{}\">{} raw</a>'.format(sample_raw_bam_url, sample_name),
                 'BAM': '<a href=\"{}\">{} bam</a>'.format(sample_bam_url, sample_name),
                 'BAI': '<a href=\"{}\">{} bai</a>'.format(sample_bai_url, sample_name),
                 'filtered_BAM': '<a href=\"{}\">{} flt bam</a>'.format(sample_filtered_bam_url, sample_name),
@@ -443,7 +438,7 @@ class MultiqcModule(BaseMultiqcModule):
             }
 
         # Generate the UCSC genome browser link
-        track_hubs_url = config.project_url + '/atacseq_hub/hub.txt'
+        track_hubs_url = project_url + '/atacseq_hub/hub.txt'
         genome_browser_url = 'http://genome-euro.ucsc.edu/cgi-bin/hgTracks?db={}&hubUrl={}'.format(self.genome_version, track_hubs_url)
         section_description = '<a href=\"{}\" target=\"_blank\">Click here to view the coverage tracks on UCSC Genome Browser <span class="glyphicon glyphicon-new-window"></span></a>'.format(genome_browser_url)
 
