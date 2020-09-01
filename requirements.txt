@@ -1,0 +1,7 @@
+samtools
+bowtie2
+fastp
+samblaster
+bedtools
+macs2
+deeptools

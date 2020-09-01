@@ -68,6 +68,7 @@ task bowtie2_align {
 
         samtools view ~{filter} -o "~{bam_dir}/~{sample.sample_name}.filtered.bam" "~{bam_dir}/~{sample.sample_name}.bam";
         samtools index "~{bam_dir}/~{sample.sample_name}.filtered.bam";
+
     >>>
 
     runtime {
@@ -110,11 +111,11 @@ task macs2_peak_call {
             --outdir ~{peaks_dir} > "~{peaks_dir}/~{sample.sample_name}.macs2.log" 2>&1;
 
         TOTAL_READS=`samtools idxstats ~{input_bam} | awk '{sum += $3}END{print sum}'`;
-        PEAK_READS=`samtools view -c -L "~{peaks_dir}/~{sample.sample_name}_peaks.narrowPeak" ~{input_bam}`;
-        awk -v total=$TOTAL_READS -v peak=$PEAK_READS '{print "frip\t" peak/total}' >> "~{sample_dir}/~{sample.sample_name}.stats.tsv";
+        samtools view -c -L "~{peaks_dir}/~{sample.sample_name}_peaks.narrowPeak" ~{input_bam} | \
+            awk -v total=$TOTAL_READS '{print "frip\t" $1/total}' >> "~{sample_dir}/~{sample.sample_name}.stats.tsv";
 
-        REGULATORY_READS=`samtools view -c -L ~{regulatory_regions} ~{input_bam}`
-        awk -v total=$TOTAL_READS -v regulatory=$REGULATORY_READS '{print "frip\t" regulatory_fraction/total}' >> "~{sample_dir}/~{sample.sample_name}.stats.tsv";
+        samtools view -c -L ~{regulatory_regions} ~{input_bam} | \
+            awk -v total=$TOTAL_READS '{print "regulatory_frip\t" $1/total}' >> "~{sample_dir}/~{sample.sample_name}.stats.tsv";
     >>>
 
     runtime {
@@ -167,7 +168,7 @@ task misc_tasks {
             bedtools coverage -a ~{slopped_tss} -b - -d -sorted | \
             awk '{counts[$7] += $8;} END { for(pos in counts){if(pos<100 || pos>~{noise_upper}){sum+=counts[pos]}}; for(pos in counts){print pos-~{tss_slop}","(counts[pos]/sum)*100}}' | \
             sort -t "," -k1,1n >> ~{tss_hist} ;
-
+        rm ~{slopped_tss};
     >>>
 
     runtime {
