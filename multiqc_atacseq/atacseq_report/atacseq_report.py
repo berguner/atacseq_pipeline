@@ -116,6 +116,12 @@ def atacseq_report_execution_start():
                                            '{}.macs2.log'.format(sample_name))
                 if not os.path.islink('{}.macs2.log'.format(sample_name)):
                     os.symlink(source_path, '{}.macs2.log'.format(sample_name))
+                source_path = os.path.join('../',
+                                           'atacseq_results',
+                                           sample_name, 'peaks',
+                                           '{}_peaks.xls'.format(sample_name))
+                if not os.path.islink('{}_peaks.xls'.format(sample_name)):
+                    os.symlink(source_path, '{}_peaks.xls'.format(sample_name))
             # Create UCSC track hub
             if hasattr(config, 'trackhub_dir'):
                 hub_dir = os.path.join(config.project_path, config.trackhub_dir) # os.path.join(config.metadata['output_dir'], 'atacseq_hub')

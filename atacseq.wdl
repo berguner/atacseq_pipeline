@@ -36,6 +36,7 @@ task bowtie2_align {
         String? adapter_fasta
         String whitelist
         String chrM
+        String? adapter_sequence
 
         Int cpus = 8
     }
@@ -57,7 +58,7 @@ task bowtie2_align {
         [ ! -d "~{bam_dir}" ] && mkdir -p ~{bam_dir};
 
         for i in ~{raw_bams}; do samtools fastq $i 2>> "~{bam_dir}/~{sample.sample_name}.samtools.log" ; done | \
-            fastp --stdin ~{interleaved_in} --stdout --html "~{bam_dir}/~{sample.sample_name}.fastp.html" --json "~{bam_dir}/~{sample.sample_name}.fastp.json" 2> "~{bam_dir}/~{sample.sample_name}.fastp.log" | \
+            fastp ~{"-a " + adapter_sequence} ~{"--adapter_fasta " + adapter_fasta} --stdin ~{interleaved_in} --stdout --html "~{bam_dir}/~{sample.sample_name}.fastp.html" --json "~{bam_dir}/~{sample.sample_name}.fastp.json" 2> "~{bam_dir}/~{sample.sample_name}.fastp.log" | \
             bowtie2 --very-sensitive --no-discordant -p ~{cpus} --maxins 2000 -x ~{bowtie2_index} --met-file "~{bam_dir}/~{sample.sample_name}.bowtie2.met" ~{interleaved} - 2> "~{bam_dir}/~{sample.sample_name}.txt" | \
             samblaster --addMateTags 2> "~{bam_dir}/~{sample.sample_name}.samblaster.log" | \
             samtools sort -o "~{bam_dir}/~{sample.sample_name}.bam" - 2>> "~{bam_dir}/~{sample.sample_name}.samtools.log";
@@ -154,7 +155,9 @@ task misc_tasks {
     String sample_dir = "~{output_dir}/~{sample.sample_name}"
     String slopped_tss = "~{output_dir}/~{sample.sample_name}/slopped_tss.bed"
     String tss_hist = "~{output_dir}/~{sample.sample_name}/~{sample.sample_name}.tss_histogram.csv"
-    Int noise_upper = ( tss_slop * 2 ) - 100
+    Int noise_lower = 100
+    Int noise_upper = ( tss_slop * 2 ) - noise_lower
+    Int double_slop = ( tss_slop * 2 )
     command <<<
         [ ! -d "~{hub_dir}" ] && mkdir -p ~{hub_dir};
 
@@ -164,14 +167,11 @@ task misc_tasks {
             -o "~{hub_dir}/~{sample.sample_name}.bigWig" > "~{hub_dir}/~{sample.sample_name}.bigWig.log" 2>&1;
 
         echo "base,count" > ~{tss_hist};
-        bedtools slop -b ~{tss_slop} -i ~{unique_tss} -g ~{chromosome_sizes} | bedtools intersect -a - -b ~{whitelist} -u > ~{slopped_tss};
-        bedtools bamtobed -i ~{input_bam} | \
-            bedtools shift -p -0.5 -m 0.5 -g ~{chromosome_sizes} -i - | \
-            bedtools sort -g ~{chromosome_sizes} -i - | \
-            bedtools coverage -a ~{slopped_tss} -b - -d -sorted | \
-            awk '{counts[$7] += $8;} END { for(pos in counts){if(pos<100 || pos>~{noise_upper}){sum+=counts[pos]}}; for(pos in counts){print pos-~{tss_slop}","(counts[pos]/sum)*100}}' | \
+        bedtools slop -b ~{tss_slop} -i ~{unique_tss} -g ~{chromosome_sizes} | \
+            bedtools coverage -a - -b ~{input_bam} -d -sorted | \
+            awk '{if($6 == "+"){ counts[$7] += $8;} else counts[~{double_slop} - $7 + 1] += $8;} END { for(pos in counts){if(pos < ~{noise_lower} || pos > ~{noise_upper}){sum+=counts[pos]}}; for(pos in counts){print pos-~{tss_slop}-1","(counts[pos]/sum)*100}}' | \
             sort -t "," -k1,1n >> ~{tss_hist} ;
-        rm ~{slopped_tss};
+
     >>>
 
     runtime {
@@ -198,8 +198,9 @@ workflow atacseq {
         String unique_tss
         Array[String] sample_list
         String bowtie2_index
-        String adapter_fasta
+        String? adapter_fasta
         String mitochondria_name
+        String? adapter_sequence
     }
 
     String output_dir = "~{project_path}/atacseq_results"
@@ -220,6 +221,7 @@ workflow atacseq {
                 sample = sample,
                 bowtie2_index = bowtie2_index,
                 adapter_fasta = adapter_fasta,
+                adapter_sequence = adapter_sequence,
                 whitelist = whitelisted_regions,
                 chrM = mitochondria_name
         }

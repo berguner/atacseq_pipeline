@@ -76,7 +76,8 @@ if __name__ == '__main__':
                    'atacseq.mitochondria_name': config['mitochondria_names'][project_genome],
                    'atacseq.regulatory_regions': config['regulatory_regions'][project_genome]
                    }
-
+    if 'adapter_sequence' in config:
+        inputs_dict['atacseq.adapter_sequence'] = config['adapter_sequence']
     sas_file = config['sample_annotation']
     sas_dict = {}
     with open(sas_file, 'r') as sas:

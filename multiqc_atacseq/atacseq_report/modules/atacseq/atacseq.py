@@ -175,12 +175,18 @@ class MultiqcModule(BaseMultiqcModule):
                 except:
                     value = None
                 data[sample_name]['frip'] = value
-            if 'regulatory_frip' in self.atacseq_data[sample_name]:
+            if 'regulatory_fraction' in self.atacseq_data[sample_name]:
                 try:
-                    value = float(self.atacseq_data[sample_name]['regulatory_frip'])
+                    value = float(self.atacseq_data[sample_name]['regulatory_fraction'])
                 except:
                     value = None
                 data[sample_name]['regulatory_fraction'] = value
+            if 'mitochondrial_fraction' in self.atacseq_data[sample_name]:
+                try:
+                    value = float(self.atacseq_data[sample_name]['mitochondrial_fraction'])
+                except:
+                    value = None
+                data[sample_name]['mitochondrial_fraction'] = value
         headers = OrderedDict()
         if hasattr(self, "color_attribute"):
             headers[self.color_attribute] = {
@@ -241,8 +247,16 @@ class MultiqcModule(BaseMultiqcModule):
             'format': '{:.2f}'
         }
         headers['regulatory_fraction'] = {
-            'description': 'Fraction of Reads in regulatory regions',
+            'description': 'Fraction of Reads in Regulatory Regions',
             'title': 'Regulatory Fraction',
+            'scale': 'Reds-rev',
+            'min': 0.0,
+            'max': 1.0,
+            'format': '{:.2f}'
+        }
+        headers['mitochondrial_fraction'] = {
+            'description': 'Fraction of Reads from Mitochondria',
+            'title': 'Mitochondrial Fraction',
             'scale': 'Reds-rev',
             'min': 0.0,
             'max': 1.0,
