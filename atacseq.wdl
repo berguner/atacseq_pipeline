@@ -6,6 +6,7 @@ struct Sample {
     String genome
     String genome_size
     String raw_bams
+    String skip_preprocess
 }
 
 
@@ -169,7 +170,7 @@ task misc_tasks {
         echo "base,count" > ~{tss_hist};
         bedtools slop -b ~{tss_slop} -i ~{unique_tss} -g ~{chromosome_sizes} | \
             bedtools coverage -a - -b ~{input_bam} -d -sorted | \
-            awk '{if($6 == "+"){ counts[$7] += $8;} else counts[~{double_slop} - $7 + 1] += $8;} END { for(pos in counts){if(pos < ~{noise_lower} || pos > ~{noise_upper}){sum+=counts[pos]}}; for(pos in counts){print pos-~{tss_slop}-1","(counts[pos]/sum)*100}}' | \
+            awk '{if($6 == "+"){ counts[$7] += $8;} else counts[~{double_slop} - $7 + 1] += $8;} END { for(pos in counts) { if(pos < ~{noise_lower} || pos > ~{noise_upper}) { noise += counts[pos] } }; average_noise = noise /(2 * ~{noise_lower}); for(pos in counts) {print pos-2000-1","(counts[pos]/average_noise) } }' | \
             sort -t "," -k1,1n >> ~{tss_hist} ;
 
     >>>
@@ -183,6 +184,7 @@ task misc_tasks {
 
     output {
         File bigWig = "~{hub_dir}/~{sample.sample_name}.bigWig"
+        File tss_hist = "~{tss_hist}"
     }
 }
 
@@ -212,39 +214,42 @@ workflow atacseq {
         Sample sample = { "sample_name": sample_name,
                             "read_type": sample_map["read_type"],
                             "raw_bams": sample_map["raw_bams"],
-                            "genome": sample_map["genome"], "genome_size": sample_map["genome_size"]
+                            "genome": sample_map["genome"],
+                            "genome_size": sample_map["genome_size"],
+                            "skip_preprocess": sample_map["skip_preprocess"]
                         }
+        if (sample.skip_preprocess != "yes") {
+            call bowtie2_align {
+                input:
+                    output_dir = output_dir,
+                    sample = sample,
+                    bowtie2_index = bowtie2_index,
+                    adapter_fasta = adapter_fasta,
+                    adapter_sequence = adapter_sequence,
+                    whitelist = whitelisted_regions,
+                    chrM = mitochondria_name
+            }
 
-        call bowtie2_align {
-            input:
-                output_dir = output_dir,
-                sample = sample,
-                bowtie2_index = bowtie2_index,
-                adapter_fasta = adapter_fasta,
-                adapter_sequence = adapter_sequence,
-                whitelist = whitelisted_regions,
-                chrM = mitochondria_name
-        }
+            call macs2_peak_call {
+                input:
+                    output_dir = output_dir,
+                    sample = sample,
+                    input_bam = bowtie2_align.filtered_bam,
+                    input_bai = bowtie2_align.filtered_bai,
+                    regulatory_regions = regulatory_regions
+            }
 
-        call macs2_peak_call {
-            input:
-                output_dir = output_dir,
-                sample = sample,
-                input_bam = bowtie2_align.filtered_bam,
-                input_bai = bowtie2_align.filtered_bai,
-                regulatory_regions = regulatory_regions
-        }
-
-        call misc_tasks {
-            input:
-                project_dir = project_path,
-                output_dir = output_dir,
-                sample = sample,
-                input_bam = bowtie2_align.filtered_bam,
-                input_bai = bowtie2_align.filtered_bai,
-                unique_tss = unique_tss,
-                chromosome_sizes = chromosome_sizes,
-                whitelist = whitelisted_regions
+            call misc_tasks {
+                input:
+                    project_dir = project_path,
+                    output_dir = output_dir,
+                    sample = sample,
+                    input_bam = bowtie2_align.filtered_bam,
+                    input_bai = bowtie2_align.filtered_bai,
+                    unique_tss = unique_tss,
+                    chromosome_sizes = chromosome_sizes,
+                    whitelist = whitelisted_regions
+            }
         }
     }
 }

@@ -248,7 +248,7 @@ class MultiqcModule(BaseMultiqcModule):
         }
         headers['regulatory_fraction'] = {
             'description': 'Fraction of Reads in Regulatory Regions',
-            'title': 'Regulatory Fraction',
+            'title': 'Regulatory',
             'scale': 'Reds-rev',
             'min': 0.0,
             'max': 1.0,
@@ -256,7 +256,7 @@ class MultiqcModule(BaseMultiqcModule):
         }
         headers['mitochondrial_fraction'] = {
             'description': 'Fraction of Reads from Mitochondria',
-            'title': 'Mitochondrial Fraction',
+            'title': 'Mitochondrial DNA',
             'scale': 'Reds-rev',
             'min': 0.0,
             'max': 1.0,

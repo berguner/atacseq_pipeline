@@ -100,6 +100,7 @@ if __name__ == '__main__':
         sample_dict = {'sample_name': sample,
                        'read_type': sas_dict[sample][0]['read_type'],
                        'organism': sas_dict[sample][0]['organism'],
+                       'skip_preprocess': sas_dict[sample][0]['skip_preprocess'],
                        'genome': project_genome,
                        'genome_size': project_genome_size,
                        'raw_bams': ''}
