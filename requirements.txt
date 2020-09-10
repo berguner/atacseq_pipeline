@@ -5,3 +5,4 @@ samblaster
 bedtools
 macs2
 deeptools
+homer

@@ -31,7 +31,7 @@ def atacseq_report_execution_start():
     if config.kwargs.get('disable_atacseq_report', True):
         return None
 
-    log.info("Running atacseq_report MultiQC Plugin v{}".format(config.atacseq_report_version))
+    log.info("Running atacseq_report MultiQC Plugin v{}, use --disable-atacseq-report to disable".format(config.atacseq_report_version))
 
     # Add to the search patterns used by atacseq module
     if 'atacseq' not in config.sp:

@@ -58,9 +58,10 @@ task bowtie2_align {
         [ ! -d "~{sample_dir}" ] && mkdir -p ~{sample_dir};
         [ ! -d "~{bam_dir}" ] && mkdir -p ~{bam_dir};
 
+        RG="--rg-id ~{sample.sample_name} --rg SM:~{sample.sample_name} --rg PL:illumina --rg CN:CeMM_BSF"
         for i in ~{raw_bams}; do samtools fastq $i 2>> "~{bam_dir}/~{sample.sample_name}.samtools.log" ; done | \
             fastp ~{"-a " + adapter_sequence} ~{"--adapter_fasta " + adapter_fasta} --stdin ~{interleaved_in} --stdout --html "~{bam_dir}/~{sample.sample_name}.fastp.html" --json "~{bam_dir}/~{sample.sample_name}.fastp.json" 2> "~{bam_dir}/~{sample.sample_name}.fastp.log" | \
-            bowtie2 --very-sensitive --no-discordant -p ~{cpus} --maxins 2000 -x ~{bowtie2_index} --met-file "~{bam_dir}/~{sample.sample_name}.bowtie2.met" ~{interleaved} - 2> "~{bam_dir}/~{sample.sample_name}.txt" | \
+            bowtie2 $RG --very-sensitive --no-discordant -p ~{cpus} --maxins 2000 -x ~{bowtie2_index} --met-file "~{bam_dir}/~{sample.sample_name}.bowtie2.met" ~{interleaved} - 2> "~{bam_dir}/~{sample.sample_name}.txt" | \
             samblaster --addMateTags 2> "~{bam_dir}/~{sample.sample_name}.samblaster.log" | \
             samtools sort -o "~{bam_dir}/~{sample.sample_name}.bam" - 2>> "~{bam_dir}/~{sample.sample_name}.samtools.log";
 
@@ -88,7 +89,7 @@ task bowtie2_align {
     }
 }
 
-task macs2_peak_call {
+task peak_calling {
     input {
         String output_dir
         String regulatory_regions
@@ -100,17 +101,26 @@ task macs2_peak_call {
 
     String sample_dir = "~{output_dir}/~{sample.sample_name}"
     String peaks_dir = "~{output_dir}/~{sample.sample_name}/peaks"
+    String homer_dir = "~{output_dir}/~{sample.sample_name}/homer"
     String format = if(sample.read_type == 'paired') then '--format BAMPE' else '--format BAM'
 
     command <<<
         [ ! -d "~{output_dir}" ] && mkdir -p ~{output_dir};
         [ ! -d "~{sample_dir}" ] && mkdir -p ~{sample_dir};
         [ ! -d "~{peaks_dir}" ] && mkdir -p ~{peaks_dir};
+        [ ! -d "~{homer_dir}" ] && mkdir -p ~{homer_dir};
 
         macs2 callpeak -t ~{input_bam} ~{format} \
             --nomodel --keep-dup auto --extsize 147 -g ~{sample.genome_size} \
             -n ~{sample.sample_name} \
             --outdir ~{peaks_dir} > "~{peaks_dir}/~{sample.sample_name}.macs2.log" 2>&1;
+
+        annotatePeaks.pl ~{peaks_dir}/~{sample.sample_name}_peaks.narrowPeak ~{sample.genome} \
+            > ~{peaks_dir}/~{sample.sample_name}_peaks.narrowPeak.annotated.tsv \
+            2> ~{peaks_dir}/~{sample.sample_name}_peaks.narrowPeak.annotated.tsv.log;
+
+        findMotifsGenome.pl "~{peaks_dir}/~{sample.sample_name}_summits.bed" ~{sample.genome} ~{homer_dir} -size 200 -mask \
+            > "~{homer_dir}/~{sample.sample_name}.homer.log" 2>&1
 
         cat ~{peaks_dir}/~{sample.sample_name}_peaks.narrowPeak | wc -l | \
             awk '{print "peaks\t" $1}' >> "~{sample_dir}/~{sample.sample_name}.stats.tsv"
@@ -125,9 +135,9 @@ task macs2_peak_call {
 
     runtime {
         rt_cpus: 2
-        rt_mem: 4000
-        rt_queue: "shortq"
-        rt_time: "12:00:00"
+        rt_mem: 8000
+        rt_queue: "mediumq"
+        rt_time: "2-00:00:00"
     }
     output {
         File peak_calls = "~{peaks_dir}/~{sample.sample_name}_peaks.narrowPeak"
@@ -230,7 +240,7 @@ workflow atacseq {
                     chrM = mitochondria_name
             }
 
-            call macs2_peak_call {
+            call peak_calling {
                 input:
                     output_dir = output_dir,
                     sample = sample,

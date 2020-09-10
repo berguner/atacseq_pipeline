@@ -18,13 +18,13 @@ custom_logo: '/home/berguener/src/atacseq_pipeline/multiqc_atacseq/BSF_logo.png'
 custom_logo_url: 'https://www.biomedical-sequencing.org/'
 custom_logo_title: 'Biomedical Sequencing Facility'
 atacseq_global_hdf: '/data/groups/lab_bsf/resources/global_stats/atacseq/global_atacseq_stats.hdf'
-pca_color_attribute: 'genotype'
-
+pca_color_attribute: 'flowcell'
+exploratory_columns: ['flowcell']
 
 # UCSC Genome Browser trackhubs:
 trackhub_dir: atacseq_hub
 trackhub_sort_order: sample_name
-trackhub_color_by: genotype
+trackhub_color_by: flowcell
 parent_track_name: ATACseq
 trackhub_visibility: full
 trackhub_name: BSA_0000_test_atac

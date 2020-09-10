@@ -130,8 +130,10 @@ class MultiqcModule(BaseMultiqcModule):
         #global_df = global_df.astype('float')
         for sample_name in self.atacseq_data:
             data[sample_name] = {}
-            if hasattr(self, 'color_attribute') and self.color_attribute in self.sample_sas_dict[sample_name]:
-                data[sample_name][self.color_attribute] = self.sample_sas_dict[sample_name][self.color_attribute]
+            if hasattr(config, 'exploratory_columns'):
+                for column in config.exploratory_columns:
+                    if column in self.sample_sas_dict[sample_name]:
+                        data[sample_name][column] = self.sample_sas_dict[sample_name][column]
             if 'NSC' in self.atacseq_data[sample_name] and self.atacseq_data[sample_name]['NSC'] != 'nan':
                 try:
                     value = float(self.atacseq_data[sample_name]['NSC'])
@@ -188,12 +190,15 @@ class MultiqcModule(BaseMultiqcModule):
                     value = None
                 data[sample_name]['mitochondrial_fraction'] = value
         headers = OrderedDict()
-        if hasattr(self, "color_attribute"):
-            headers[self.color_attribute] = {
-                'description': self.color_attribute,
-                'title': self.color_attribute,
-                'scale': False
-            }
+        if hasattr(config, 'exploratory_columns'):
+            for column in config.exploratory_columns:
+                log.info('Adding exploratory column {}'.format(column))
+                headers[column] = {
+                    'description': column,
+                    'title': column,
+                    'scale': False }
+        else:
+            log.warning("No exploratory columns were specified in the config")
         headers['peaks'] = {
             'description': 'Number of detected peaks',
             'title': 'Peaks',
@@ -354,7 +359,6 @@ class MultiqcModule(BaseMultiqcModule):
             'id': 'download_links',  # ID used for the table
             'table_title': 'Download ATAC-seq data',  # Title of the table. Used in the column config modal
             'save_file': False,  # Whether to save the table data to a file
-            #'raw_data_fn': 'multiqc_download_links_table',  # File basename to use for raw data file
             'sortRows': False,  # Whether to sort rows alphabetically
             'col1_header': 'Sample Name',  # The header used for the first column
             'no_beeswarm': True,
@@ -363,11 +367,6 @@ class MultiqcModule(BaseMultiqcModule):
 
         # Configuration for the header row
         headers = OrderedDict()
-        # headers['raw_data'] = {
-        #     'title': 'Raw Data',
-        #     'description': 'Raw sequence data in BAM format',
-        #     'scale': False
-        # }
         headers['BAM'] = {
             'title': 'BAM',
             'description': 'Bowtie2 alignment results in BAM format',
@@ -402,6 +401,12 @@ class MultiqcModule(BaseMultiqcModule):
             'scale': False,
             'hidden': False
         }
+        headers['motifs'] = {
+            'title': 'Motifs',
+            'description': 'HOMER motif analysis results',
+            'scale': False,
+            'hidden': False
+        }
         headers['coverage_bigwig'] = {
             'title': 'Coverage BigWig',
             'description': 'Genome wide coverage data in UCSC bigWig format',
@@ -409,7 +414,7 @@ class MultiqcModule(BaseMultiqcModule):
             'hidden': False
         }
 
-        # Fill the table with URLs
+        # Fill the download table with URLs
         igv_links = []
         sample_names = []
         data = OrderedDict()
@@ -418,37 +423,25 @@ class MultiqcModule(BaseMultiqcModule):
             # generate links list for loading them on IGV
             igv_link = project_url + '/atacseq_hub/' + self.genome_version + '/' + sample_name + '.bigWig'
             igv_links.append(igv_link)
-            # Generate the URL for the raw bam file
-            # raw_bam_path = os.path.join(results_path, sample_name, 'unmapped', sample_name + '.bam')
-            # bsf_raw_bam_path = '../../../../../samples/{}/{}_{}_samples/{}_{}#{}.bam'.format(
-            #     self.sample_sas_dict[sample_name]['flowcell'],
-            #     self.sample_sas_dict[sample_name]['flowcell'],
-            #     self.sample_sas_dict[sample_name]['lane'],
-            #     self.sample_sas_dict[sample_name]['flowcell'],
-            #     self.sample_sas_dict[sample_name]['lane'],
-            #     self.sample_sas_dict[sample_name]['BSF_name']
-            # )
-            # # Create the symlink for the raw bam file in the file system
-            # if not os.path.exists(raw_bam_path):# and os.path.exists(bsf_raw_bam_path):
-            #     os.symlink(bsf_raw_bam_path, raw_bam_path)
-            # # Create and put the URLs into the download table
-            sample_raw_bam_url = '{}/{}/unmapped/{}.bam'.format(results_url, sample_name, sample_name)
+            # TODO: Generate the URL for the raw bam files
             sample_bam_url = '{}/{}/mapped/{}.bam'.format(results_url, sample_name, sample_name)
             sample_bai_url = '{}/{}/mapped/{}.bam.bai'.format(results_url, sample_name, sample_name)
             sample_filtered_bam_url = '{}/{}/mapped/{}.filtered.bam'.format(results_url, sample_name, sample_name)
             sample_filtered_bai_url = '{}/{}/mapped/{}.filtered.bam.bai'.format(results_url, sample_name, sample_name)
             sample_peaks_url = '{}/{}/peaks/{}_peaks.narrowPeak'.format(results_url, sample_name, sample_name)
             sample_summits_url = '{}/{}/peaks/{}_summits.bed'.format(results_url, sample_name, sample_name)
+            sample_known_motifs_url = '{}/{}/homer/knownResults.html'.format(results_url, sample_name)
+            sample_denovo_motifs_url = '{}/{}/homer/homerResults.html'.format(results_url, sample_name)
             sample_bigwig_url = '{}/atacseq_hub/{}.bigWig'.format(project_url, sample_name)
             data[sample_name] = {
-            #    'raw_data': '<a href=\"{}\">{} raw</a>'.format(sample_raw_bam_url, sample_name),
                 'BAM': '<a href=\"{}\">{} bam</a>'.format(sample_bam_url, sample_name),
                 'BAI': '<a href=\"{}\">{} bai</a>'.format(sample_bai_url, sample_name),
                 'filtered_BAM': '<a href=\"{}\">{} flt bam</a>'.format(sample_filtered_bam_url, sample_name),
                 'filtered_BAI': '<a href=\"{}\">{} flt bai</a>'.format(sample_filtered_bai_url, sample_name),
                 'filtered_peaks': '<a href=\"{}\">{} peaks</a>'.format(sample_peaks_url, sample_name),
                 'summits_bed': '<a href=\"{}\">{} summits</a>'.format(sample_summits_url, sample_name),
-                'coverage_bigwig': '<a href=\"{}\">{} bigWig</a>'.format(sample_bigwig_url, sample_name)
+                'coverage_bigwig': '<a href=\"{}\">{} bigWig</a>'.format(sample_bigwig_url, sample_name),
+                'motifs': '<a href=\"{}\">{} Known</a><br><a href=\"{}\">{} DeNovo</a>'.format(sample_known_motifs_url, sample_name, sample_denovo_motifs_url, sample_name)
             }
 
         # Generate the UCSC genome browser link
