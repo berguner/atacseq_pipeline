@@ -349,9 +349,8 @@ class MultiqcModule(BaseMultiqcModule):
 
     def add_download_table(self):
         # Create a table with download links to various files
-        results_url = os.path.join(config.base_url, config.project_uuid, 'atacseq_results')
+        results_url = '../atacseq_results' #os.path.join(config.base_url, config.project_uuid, 'atacseq_results')
         project_url = os.path.join(config.base_url, config.project_uuid)
-        results_path =os.path.join(config.project_path, 'atacseq_results')
 
         # Configuration for the MultiQC table
         table_config = {
@@ -372,23 +371,23 @@ class MultiqcModule(BaseMultiqcModule):
             'description': 'Bowtie2 alignment results in BAM format',
             'scale': False
         }
-        headers['BAI'] = {
-            'title': 'BAI',
-            'description': 'Index files for the aligned BAM files',
-            'scale': False
-        }
+        # headers['BAI'] = {
+        #     'title': 'BAI',
+        #     'description': 'Index files for the aligned BAM files',
+        #     'scale': False
+        # }
         headers['filtered_BAM'] = {
             'title': 'Filtered BAM',
             'description': 'BAM files without the low quality alignments',
             'scale': False,
             'hidden': True
         }
-        headers['filtered_BAI'] = {
-            'title': 'Filtered BAI',
-            'description': 'Index files for the filtered BAM files',
-            'scale': False,
-            'hidden': True
-        }
+        # headers['filtered_BAI'] = {
+        #     'title': 'Filtered BAI',
+        #     'description': 'Index files for the filtered BAM files',
+        #     'scale': False,
+        #     'hidden': True
+        # }
         headers['filtered_peaks'] = {
             'title': 'Peaks',
             'description': 'Filtered peak calls by MACS2 in bed format',
@@ -429,17 +428,16 @@ class MultiqcModule(BaseMultiqcModule):
             sample_filtered_bam_url = '{}/{}/mapped/{}.filtered.bam'.format(results_url, sample_name, sample_name)
             sample_filtered_bai_url = '{}/{}/mapped/{}.filtered.bam.bai'.format(results_url, sample_name, sample_name)
             sample_peaks_url = '{}/{}/peaks/{}_peaks.narrowPeak'.format(results_url, sample_name, sample_name)
+            sample_annotated_peaks_url = '{}/{}/peaks/{}_peaks.narrowPeak.annotated.tsv'.format(results_url, sample_name, sample_name)
             sample_summits_url = '{}/{}/peaks/{}_summits.bed'.format(results_url, sample_name, sample_name)
             sample_known_motifs_url = '{}/{}/homer/knownResults.html'.format(results_url, sample_name)
             sample_denovo_motifs_url = '{}/{}/homer/homerResults.html'.format(results_url, sample_name)
-            sample_bigwig_url = '{}/atacseq_hub/{}.bigWig'.format(project_url, sample_name)
+            sample_bigwig_url = '../atacseq_hub/{}.bigWig'.format(sample_name)
             data[sample_name] = {
-                'BAM': '<a href=\"{}\">{} bam</a>'.format(sample_bam_url, sample_name),
-                'BAI': '<a href=\"{}\">{} bai</a>'.format(sample_bai_url, sample_name),
-                'filtered_BAM': '<a href=\"{}\">{} flt bam</a>'.format(sample_filtered_bam_url, sample_name),
-                'filtered_BAI': '<a href=\"{}\">{} flt bai</a>'.format(sample_filtered_bai_url, sample_name),
-                'filtered_peaks': '<a href=\"{}\">{} peaks</a>'.format(sample_peaks_url, sample_name),
-                'summits_bed': '<a href=\"{}\">{} summits</a>'.format(sample_summits_url, sample_name),
+                'BAM': '<a href=\"{}\">{} BAM</a><br><a href=\"{}\">{} BAI</a>'.format(sample_bam_url, sample_name, sample_bai_url, sample_name),
+                'filtered_BAM': '<a href=\"{}\">{} flt BAM</a><br><a href=\"{}\">{} flt BAI</a>'.format(sample_filtered_bam_url, sample_name, sample_filtered_bai_url, sample_name),
+                'filtered_peaks': '<a href=\"{}\">{} Peaks</a><br><a href=\"{}\">{} Annotated Peaks</a>'.format(sample_peaks_url, sample_name, sample_annotated_peaks_url, sample_name),
+                'summits_bed': '<a href=\"{}\">{} Summits</a>'.format(sample_summits_url, sample_name),
                 'coverage_bigwig': '<a href=\"{}\">{} bigWig</a>'.format(sample_bigwig_url, sample_name),
                 'motifs': '<a href=\"{}\">{} Known</a><br><a href=\"{}\">{} DeNovo</a>'.format(sample_known_motifs_url, sample_name, sample_denovo_motifs_url, sample_name)
             }
