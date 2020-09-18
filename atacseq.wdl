@@ -49,6 +49,7 @@ task bowtie2_align {
     String interleaved_in = if(sample.read_type == "paired") then "--interleaved_in" else " "
     String interleaved = if(sample.read_type == "paired") then "--interleaved" else " "
     String filter = if(sample.read_type == "paired") then "-q 30 -F 2316 -f 2 -L ~{whitelist}" else "-q 30 -F 2316 -L ~{whitelist}"
+    String add_mate_tags = if(sample.read_type == "paired") then "--addMateTags" else " "
 
     #Int raw_size_mb = sample.raw_size_mb #sample_map['raw_size_mb']
     Int memory = 16000
@@ -62,7 +63,7 @@ task bowtie2_align {
         for i in ~{raw_bams}; do samtools fastq $i 2>> "~{bam_dir}/~{sample.sample_name}.samtools.log" ; done | \
             fastp ~{"-a " + adapter_sequence} ~{"--adapter_fasta " + adapter_fasta} --stdin ~{interleaved_in} --stdout --html "~{bam_dir}/~{sample.sample_name}.fastp.html" --json "~{bam_dir}/~{sample.sample_name}.fastp.json" 2> "~{bam_dir}/~{sample.sample_name}.fastp.log" | \
             bowtie2 $RG --very-sensitive --no-discordant -p ~{cpus} --maxins 2000 -x ~{bowtie2_index} --met-file "~{bam_dir}/~{sample.sample_name}.bowtie2.met" ~{interleaved} - 2> "~{bam_dir}/~{sample.sample_name}.txt" | \
-            samblaster --addMateTags 2> "~{bam_dir}/~{sample.sample_name}.samblaster.log" | \
+            samblaster ~{add_mate_tags} 2> "~{bam_dir}/~{sample.sample_name}.samblaster.log" | \
             samtools sort -o "~{bam_dir}/~{sample.sample_name}.bam" - 2>> "~{bam_dir}/~{sample.sample_name}.samtools.log";
 
         samtools index "~{bam_dir}/~{sample.sample_name}.bam" 2>> "~{bam_dir}/~{sample.sample_name}.samtools.log";
