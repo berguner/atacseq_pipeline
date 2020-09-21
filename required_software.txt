@@ -1,8 +1,11 @@
-samtools
-bowtie2
-fastp
+samtools >1.9
+bowtie2 2.4.1
+fastp 0.20.0
 samblaster v0.1.24
-bedtools
-macs2
-deeptools
+bedtools v2.29.2
+macs2 2.2.7.1
+deeptools 3.5.0
 homer
+multiqc 1.9
+java jdk v1.8
+cromwell 52
