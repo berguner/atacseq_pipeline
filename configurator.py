@@ -113,17 +113,23 @@ if __name__ == '__main__':
             if 'data_source' in row_list[i] and row_list[i]['data_source'] != '':
                 source_template = config['data_sources'][row_list[i]['data_source']]
                 source = source_template.format(**row_list[i])
-                bam_sources.append(source)
-                if(os.path.exists(source)):
-                    source_stats = os.stat(source)
-                    raw_size_mb += int(source_stats.st_size / (1024 * 1024))
-                #sample_dict['raw_bams'].append(source)
-        sample_dict['raw_bams'] = ' '.join(bam_sources)
-        sample_dict['raw_size_mb'] = raw_size_mb
-        # sample_json = os.path.join(json_path, '{}.json'.format(sample))
-        # with open(sample_json, 'w') as output:
-        #     json.dump(sample_dict, output, indent=2)
-        sample_tsv = os.path.join(json_path, '{}.tsv'.format(sample))
-        with open(sample_tsv, 'w') as output:
-            for key in sample_dict:
-                output.write('{}\t{}\n'.format(key, sample_dict[key]))
+                if os.path.exists(source):
+                    bam_sources.append(source)
+                    if(os.path.exists(source)):
+                        source_stats = os.stat(source)
+                        raw_size_mb += int(source_stats.st_size / (1024 * 1024))
+                    #sample_dict['raw_bams'].append(source)
+                else:
+                    print('WARNING: Could not locate {}'.format(source))
+        if len(bam_sources) == 0:
+            print('WARNING: Could not locate any raw data files for sample {}, skipping.'.format(sample))
+        else:
+            sample_dict['raw_bams'] = ' '.join(bam_sources)
+            sample_dict['raw_size_mb'] = raw_size_mb
+            # sample_json = os.path.join(json_path, '{}.json'.format(sample))
+            # with open(sample_json, 'w') as output:
+            #     json.dump(sample_dict, output, indent=2)
+            sample_tsv = os.path.join(json_path, '{}.tsv'.format(sample))
+            with open(sample_tsv, 'w') as output:
+                for key in sample_dict:
+                    output.write('{}\t{}\n'.format(key, sample_dict[key]))

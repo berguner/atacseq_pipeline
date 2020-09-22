@@ -41,11 +41,10 @@ def atacseq_report_execution_start():
         config.update_dict(config.sp, {'atacseq/tss': {'fn': '*TSS.csv', 'contents': 'count'}})
 
     # Create symlink for the web server
-    if hasattr(config, 'base_url') and hasattr(config, 'project_uuid'):
+    if hasattr(config, 'base_url') and hasattr(config, 'project_uuid') and hasattr(config, 'public_html_folder'):
         project_url = os.path.join(config.base_url, config.project_uuid)
-        html_folder = os.path.join(os.getenv('BSF_PUBLIC_HTML'), 'projects')
-        os.chdir(html_folder)
-        if not os.path.exists(os.path.join(html_folder, config.project_uuid)):
+        os.chdir(config.public_html_folder)
+        if not os.path.exists(os.path.join(config.public_html_folder, config.project_uuid)):
             # The symlink has to be relative so that the web server can locate the project folder
             relative_path = os.path.relpath(config.project_path)
             os.symlink(relative_path, config.project_uuid)
