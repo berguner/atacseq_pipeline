@@ -81,9 +81,6 @@ class MultiqcModule(BaseMultiqcModule):
         # Get the genome version
         self.genome_version = config.genome
 
-        # Load global statistics
-        self.global_stats = pd.read_hdf(config.atacseq_global_hdf)
-
         # Add stats to general table
         self.add_atacseq_to_general_stats()
 
@@ -121,13 +118,6 @@ class MultiqcModule(BaseMultiqcModule):
 
     def add_atacseq_to_general_stats(self):
         data = {}
-        global_df = pd.DataFrame(self.global_stats, columns=['sample_name', 'NSC', 'RSC'])
-        global_df['NSC_Percentile'] = global_df.NSC.rank(pct=True, na_option='keep')
-        global_df['RSC_Percentile'] = global_df.RSC.rank(pct=True, na_option='keep')
-        global_df.set_index('sample_name', inplace=True)
-        global_df['NSC'] = global_df['NSC'].astype(float)
-        global_df['RSC'] = global_df['RSC'].astype(float)
-        #global_df = global_df.astype('float')
         for sample_name in self.atacseq_data:
             data[sample_name] = {}
             if hasattr(config, 'exploratory_columns'):
@@ -140,25 +130,13 @@ class MultiqcModule(BaseMultiqcModule):
                 except ValueError as err:
                     print(err)
                     value = 'NaN'
-                try:
-                    pct_value = global_df.loc[(global_df['NSC'] - value).abs().idxmin()]['NSC_Percentile'] * 100
-                except ValueError as err:
-                    print(err)
-                    pct_value = 'NaN'
                 data[sample_name]['NSC'] = value
-                data[sample_name]['NSC_PCT'] = pct_value
             if 'RSC' in self.atacseq_data[sample_name] and self.atacseq_data[sample_name]['RSC'] != 'nan':
                 try:
                     value = float(self.atacseq_data[sample_name]['RSC'])
                 except:
                     value = 'NaN'
-                try:
-                    pct_value = global_df.loc[(global_df['RSC'] - value).abs().idxmin()]['RSC_Percentile'] * 100
-                except ValueError as err:
-                    print(err)
-                    pct_value = 'NaN'
                 data[sample_name]['RSC'] = value
-                data[sample_name]['RSC_PCT'] = pct_value
             if 'peaks' in self.atacseq_data[sample_name]:
                 try:
                     value = int(self.atacseq_data[sample_name]['peaks'])
@@ -371,26 +349,15 @@ class MultiqcModule(BaseMultiqcModule):
             'description': 'Bowtie2 alignment results in BAM format',
             'scale': False
         }
-        # headers['BAI'] = {
-        #     'title': 'BAI',
-        #     'description': 'Index files for the aligned BAM files',
-        #     'scale': False
-        # }
         headers['filtered_BAM'] = {
             'title': 'Filtered BAM',
             'description': 'BAM files without the low quality alignments',
             'scale': False,
             'hidden': True
         }
-        # headers['filtered_BAI'] = {
-        #     'title': 'Filtered BAI',
-        #     'description': 'Index files for the filtered BAM files',
-        #     'scale': False,
-        #     'hidden': True
-        # }
         headers['filtered_peaks'] = {
             'title': 'Peaks',
-            'description': 'Filtered peak calls by MACS2 in bed format',
+            'description': 'Peak calls by MACS2 in bed format',
             'scale': False,
             'hidden': False
         }
