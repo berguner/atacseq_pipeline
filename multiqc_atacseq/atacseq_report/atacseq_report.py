@@ -52,7 +52,7 @@ def atacseq_report_execution_start():
                                                                                           'atacseq_report',
                                                                                           'multiqc_report.html')))
     else:
-        log.error('Please provide base_url and project_uuid in the configuration file')
+        log.error('Please provide base_url, project_uuid and public_html_folder in the configuration file')
         exit(1)
 
 
@@ -131,11 +131,11 @@ def atacseq_report_execution_start():
                     os.mkdir(track_dir)
                 os.chdir(track_dir)
                 # Create the bigWig links for the sample coverage tracks
-                for sample_name in samples_dict:
-                    bigWig_path = os.path.join('../',
-                                               '{}.bigWig'.format(sample_name))
-                    if not os.path.exists('{}.bigWig'.format(sample_name)):
-                        os.symlink(bigWig_path, '{}.bigWig'.format(sample_name))
+                # for sample_name in samples_dict:
+                #     bigWig_path = os.path.join('../',
+                #                                '{}.bigWig'.format(sample_name))
+                #     if not os.path.exists('{}.bigWig'.format(sample_name)):
+                #         os.symlink(bigWig_path, '{}.bigWig'.format(sample_name))
                 genomes_file_path = os.path.join(hub_dir, 'genomes.txt')
                 with open(genomes_file_path, 'w') as genomes_file:
                     genomes_text = 'genome {}\ntrackDb {}/trackDb.txt\n'.format(config.genome,

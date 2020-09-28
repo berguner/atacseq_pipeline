@@ -45,16 +45,16 @@ class MultiqcModule(BaseMultiqcModule):
         if len(self.atacseq_data) == 0:
             raise UserWarning
 
-        # Remove ignored samples if there is any
-        self.atacseq_data = self.ignore_samples(self.atacseq_data)
-
         # Parse TSS for each sample
         self.atacseq_tss_data = dict()
         for f in self.find_log_files(sp_key='atacseq/tss'):
-            self.atacseq_tss_data[f['s_name']] = self.parse_atacseq_tss(f['f'])
+            my_sample_name = f['s_name'].replace('_TSS','')
+            self.atacseq_tss_data[f['s_name']], self.atacseq_data[my_sample_name]['tss_max'] = self.parse_atacseq_tss(f['f'])
         log.info('Found TSS file for {} ATAC-seq samples'.format(len(self.atacseq_tss_data)))
         # Remove ignored samples if there is any
         self.atacseq_tss_data = self.ignore_samples(self.atacseq_tss_data)
+        # Remove ignored samples if there is any
+        self.atacseq_data = self.ignore_samples(self.atacseq_data)
 
         # Load the sample annotation sheet
         sample_sas_path = config.sample_annotation
@@ -93,7 +93,7 @@ class MultiqcModule(BaseMultiqcModule):
         # Add TSS line graph
         self.add_tss_plot()
 
-        # # Add PCA plots
+        # TODO: Add PCA plots
         # self.pca_dict = {}
         # self.add_pca_plots()
 
@@ -107,14 +107,17 @@ class MultiqcModule(BaseMultiqcModule):
     def parse_atacseq_tss(self, f):
         data = OrderedDict()
         count = 0
+        max_value = 0.0
         for l in f.splitlines():
             s = l.split(',')
             if s[0] == 'base':
                 continue
+            if float(s[1]) > max_value:
+                max_value = float(s[1])
             count += 1
             if count % 10 == 0:
                 data[int(s[0])] = float(s[1])
-        return data
+        return data, max_value
 
     def add_atacseq_to_general_stats(self):
         data = {}
@@ -161,6 +164,8 @@ class MultiqcModule(BaseMultiqcModule):
                 except:
                     value = None
                 data[sample_name]['regulatory_fraction'] = value
+            if 'tss_max' in self.atacseq_data[sample_name]:
+                data[sample_name]['tss_max'] = self.atacseq_data[sample_name]['tss_max']
             if 'mitochondrial_fraction' in self.atacseq_data[sample_name]:
                 try:
                     value = float(self.atacseq_data[sample_name]['mitochondrial_fraction'])
@@ -177,6 +182,7 @@ class MultiqcModule(BaseMultiqcModule):
                     'scale': False }
         else:
             log.warning("No exploratory columns were specified in the config")
+
         headers['peaks'] = {
             'description': 'Number of detected peaks',
             'title': 'Peaks',
@@ -236,6 +242,12 @@ class MultiqcModule(BaseMultiqcModule):
             'min': 0.0,
             'max': 1.0,
             'format': '{:.2f}'
+        }
+        headers['tss_max'] = {
+            'description': 'The peak value of TSS enrichment',
+            'title': 'TSS',
+            'scale': 'Reds-rev',
+            'format': '{:.1f}'
         }
         headers['mitochondrial_fraction'] = {
             'description': 'Fraction of Reads from Mitochondria',
