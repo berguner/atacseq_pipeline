@@ -126,16 +126,16 @@ def atacseq_report_execution_start():
                 hub_dir = os.path.join(config.project_path, config.trackhub_dir) # os.path.join(config.metadata['output_dir'], 'atacseq_hub')
                 if not os.path.exists(hub_dir):
                     log.error('Please make sure that trackhub_dir exists')
-                track_dir = os.path.join(hub_dir,  config.genome)
+                track_dir = os.path.join(hub_dir, config.genome)
                 if not os.path.exists(track_dir):
                     os.mkdir(track_dir)
                 os.chdir(track_dir)
                 # Create the bigWig links for the sample coverage tracks
-                # for sample_name in samples_dict:
-                #     bigWig_path = os.path.join('../',
-                #                                '{}.bigWig'.format(sample_name))
-                #     if not os.path.exists('{}.bigWig'.format(sample_name)):
-                #         os.symlink(bigWig_path, '{}.bigWig'.format(sample_name))
+                for sample_name in samples_dict:
+                    bigWig_path = os.path.join('../',
+                                               '{}.bigWig'.format(sample_name))
+                    if not os.path.islink('{}.bigWig'.format(sample_name)):
+                        os.symlink(bigWig_path, '{}.bigWig'.format(sample_name))
                 genomes_file_path = os.path.join(hub_dir, 'genomes.txt')
                 with open(genomes_file_path, 'w') as genomes_file:
                     genomes_text = 'genome {}\ntrackDb {}/trackDb.txt\n'.format(config.genome,

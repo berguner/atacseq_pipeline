@@ -1,4 +1,6 @@
 sample_name,flowcell,lane,BSF_name,data_source,read_type,organism,skip_preprocess
-paired_test_sample,BSF_0789_HGVVGBBXY,1,HPCLSK_CDK6_K43M_080219_A_S66391,bsf_test,paired,mouse,no
-paired_test_sample,BSF_0789_HGVVGBBXY,2,HPCLSK_CDK6_K43M_080219_A_S66391,bsf_test,paired,mouse,no
-single_test_sample,BSF_0736_HGJLWBBXY,2,F_ATAC_Th0_1_S61854,bsf_test,single,mouse,no
+S71730,BSF_0855_HK7MWBBXY,1,S_2F_S71730,bsf_test,paired,human,no
+S71730_05,BSF_0855_HK7MWBBXY,1,S71730_05,bsf_test,paired,human,no
+S71730_02,BSF_0855_HK7MWBBXY,1,S71730_02,bsf_test,paired,human,no
+S71730_05_r1,BSF_0855_HK7MWBBXY,1,S71730_05_r1,bsf_test,single,human,no
+S71730_02_r1,BSF_0855_HK7MWBBXY,1,S71730_02_r1,bsf_test,single,human,no

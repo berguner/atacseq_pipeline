@@ -5,7 +5,7 @@ public_html_folder: /scratch/lab_bsf/public_html/projects/
 base_url: https://www.biomedical-sequencing.at/projects/
 sample_annotation: /home/berguener/src/atacseq_pipeline/test/BSA_0000_test_atac_atacseq_sample_annotations.csv
 project_path: /scratch/users/berguener/junk/BSA_0000_test_atac/
-genome: mm10
+genome: hg38
 adapter_sequence: GTCTCGTGGGCTCGG
 
 # MultiQC report
