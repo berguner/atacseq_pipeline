@@ -5,6 +5,7 @@ LABEL about.summary="Collection of tools for the BSF atacseq_pipeline"
 LABEL about.home="https://www.biomedical-sequencing.org"
 LABEL about.tags="Epigenetics, ATAC-seq"
 LABEL about.maintainer="Bekir Erguener @ CeMM/BSF"
+LABEL version="0.2"
 ################## MAINTAINER ####################
 
 ENV DEBIAN_FRONTEND=noninteractive 
