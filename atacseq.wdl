@@ -78,8 +78,8 @@ task bowtie2_align {
     runtime {
         rt_cpus: cpus
         rt_mem: memory
-        rt_queue: "mediumq"
-        rt_time: "2-00:00:00"
+        rt_queue: "shortq"
+        rt_time: "12:00:00"
     }
 
     output {
@@ -137,8 +137,8 @@ task peak_calling {
     runtime {
         rt_cpus: 2
         rt_mem: 8000
-        rt_queue: "mediumq"
-        rt_time: "2-00:00:00"
+        rt_queue: "shortq"
+        rt_time: "12:00:00"
     }
     output {
         File peak_calls = "~{peaks_dir}/~{sample.sample_name}_peaks.narrowPeak"
@@ -146,7 +146,6 @@ task peak_calling {
         File summits_bed = "~{peaks_dir}/~{sample.sample_name}_summits.bed"
     }
 }
-
 
 task misc_tasks {
     input {
