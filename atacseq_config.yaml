@@ -1,23 +1,23 @@
 # The following section contains resource files required by the pipeline
-adapter_fasta: /data/groups/lab_bsf/resources/atacseq/nextera_adapters.fa
+adapter_fasta: /research/lab_bsf/resources/atacseq/nextera_adapters.fa
 bowtie2_index:
-    hg38: /scratch/lab_bsf/resources/genomes/hg38/indices_for_Bowtie2/hg38
-    mm10: /scratch/lab_bsf/resources/genomes/mm10/indices_for_Bowtie2/mm10
+    hg38: /nobackup/lab_bsf/resources/genomes/hg38/indices_for_Bowtie2/hg38
+    mm10: /nobackup/lab_bsf/resources/genomes/mm10/indices_for_Bowtie2/mm10
 chromosome_sizes:
-    hg38: /data/groups/lab_bsf/resources/atacseq/hg38.chromSizes
-    mm10: /data/groups/lab_bsf/resources/atacseq/mm10.chromSizes
+    hg38: /research/lab_bsf/resources/atacseq/hg38.chromSizes
+    mm10: /research/lab_bsf/resources/atacseq/mm10.chromSizes
 blacklisted_regions:
-    hg38: /data/groups/lab_bsf/resources/atacseq/hg38-ENCODE_blacklist.sorted.v3.bed
-    mm10: /data/groups/lab_bsf/resources/atacseq/mm10-ENCODE_blacklist.sorted.v2.bed
+    hg38: /research/lab_bsf/resources/atacseq/hg38-ENCODE_blacklist.sorted.v3.bed
+    mm10: /research/lab_bsf/resources/atacseq/mm10-ENCODE_blacklist.sorted.v2.bed
 whitelisted_regions:
-    hg38: /data/groups/lab_bsf/resources/atacseq/hg38-ENCODE_whitelist.sorted.v3.bed
-    mm10: /data/groups/lab_bsf/resources/atacseq/mm10-ENCODE_whitelist.sorted.v2.bed
+    hg38: /research/lab_bsf/resources/atacseq/hg38-ENCODE_whitelist.sorted.v3.bed
+    mm10: /research/lab_bsf/resources/atacseq/mm10-ENCODE_whitelist.sorted.v2.bed
 unique_tss:
-    hg38: /data/groups/lab_bsf/resources/atacseq/hg38_gencode_tss_unique.bed
-    mm10: /data/groups/lab_bsf/resources/atacseq/mm10_CCDS_tss_unique.bed
+    hg38: /research/lab_bsf/resources/atacseq/hg38_gencode_tss_unique.sorted.bed
+    mm10: /research/lab_bsf/resources/atacseq/mm10_CCDS_tss_unique.bed
 regulatory_regions:
-    hg38: /data/groups/lab_bsf/resources/atacseq/homo_sapiens.GRCh38.Regulatory_Build.regulatory_features.chromosomes_only.20161111.bed
-    mm10: /data/groups/lab_bsf/resources/atacseq/mus_musculus.GRCm38.Regulatory_Build.regulatory_features.20161111.sorted.bed
+    hg38: /research/lab_bsf/resources/atacseq/homo_sapiens.GRCh38.Regulatory_Build.regulatory_features.chromosomes_only.20161111.bed
+    mm10: /research/lab_bsf/resources/atacseq/mus_musculus.GRCm38.Regulatory_Build.regulatory_features.20161111.sorted.bed
 genome_sizes:
     hg38: 2747877777
     mm10: 2407883318
@@ -31,5 +31,5 @@ data_sources:
   # entries correspond to values in the data_source column in sample_annotation table
   # {variable} can be used to replace environment variables or other sample_annotation columns
   # If you use {variable} codes, you should quote the field so python can parse it.
-  bsf: /scratch/lab_bsf/samples/{flowcell}/{flowcell}_{lane}_samples/{flowcell}_{lane}#{BSF_name}.bam
-  bsf_test: /scratch/users/berguener/junk/atac_test_data/{flowcell}_{lane}#{BSF_name}.bam
+  bsf: /nobackup/lab_bsf/samples/{flowcell}/{flowcell}_{lane}_samples/{flowcell}_{lane}#{BSF_name}.bam
+  bsf_test: /nobackup/lab_bsf/users/berguener/junk/atac_test_data/{flowcell}_{lane}#{BSF_name}.bam
