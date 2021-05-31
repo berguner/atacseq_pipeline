@@ -83,5 +83,13 @@ RUN wget http://homer.ucsd.edu/homer/configureHomer.pl \
 	&& perl configureHomer.pl -install hg38 mm10
 ENV PATH /homer/bin:$PATH
 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	git
+
+RUN pip3 install multiqc
+
+RUN git clone https://github.com/berguner/atacseq_pipeline.git && \
+	python3 atacseq_pipeline/multiqc_atacseq/setup.py install
+
 CMD ["/bin/bash"]
 
