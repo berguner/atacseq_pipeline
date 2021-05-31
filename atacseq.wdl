@@ -78,8 +78,8 @@ task bowtie2_align {
     runtime {
         rt_cpus: cpus
         rt_mem: memory
-        rt_queue: "mediumq"
-        rt_time: "2-00:00:00"
+        rt_queue: "shortq"
+        rt_time: "12:00:00"
     }
 
     output {
@@ -103,6 +103,7 @@ task peak_calling {
     String sample_dir = "~{output_dir}/~{sample.sample_name}"
     String peaks_dir = "~{output_dir}/~{sample.sample_name}/peaks"
     String homer_dir = "~{output_dir}/~{sample.sample_name}/homer"
+    String homer_preparsed_dir = "~{output_dir}/~{sample.sample_name}/homer/preparsed"
     String format = if(sample.read_type == 'paired') then '--format BAMPE' else '--format BAM'
 
     command <<<
@@ -110,6 +111,7 @@ task peak_calling {
         [ ! -d "~{sample_dir}" ] && mkdir -p ~{sample_dir};
         [ ! -d "~{peaks_dir}" ] && mkdir -p ~{peaks_dir};
         [ ! -d "~{homer_dir}" ] && mkdir -p ~{homer_dir};
+        [ ! -d "~{homer_preparsed_dir}" ] && mkdir -p ~{homer_preparsed_dir};
 
         macs2 callpeak -t ~{input_bam} ~{format} \
             --nomodel --keep-dup auto --extsize 147 -g ~{sample.genome_size} \
@@ -121,7 +123,9 @@ task peak_calling {
             2> ~{peaks_dir}/~{sample.sample_name}_peaks.narrowPeak.annotated.tsv.log;
 
         findMotifsGenome.pl "~{peaks_dir}/~{sample.sample_name}_summits.bed" ~{sample.genome} ~{homer_dir} -size 200 -mask \
-            > "~{homer_dir}/~{sample.sample_name}.homer.log" 2>&1
+            -preparsedDir ~{homer_preparsed_dir} > "~{homer_dir}/~{sample.sample_name}.homer.log" 2>&1
+
+        rm -r ~{homer_preparsed_dir};
 
         cat ~{peaks_dir}/~{sample.sample_name}_peaks.narrowPeak | wc -l | \
             awk '{print "peaks\t" $1}' >> "~{sample_dir}/~{sample.sample_name}.stats.tsv"
@@ -137,8 +141,8 @@ task peak_calling {
     runtime {
         rt_cpus: 2
         rt_mem: 8000
-        rt_queue: "mediumq"
-        rt_time: "2-00:00:00"
+        rt_queue: "shortq"
+        rt_time: "12:00:00"
     }
     output {
         File peak_calls = "~{peaks_dir}/~{sample.sample_name}_peaks.narrowPeak"
@@ -146,7 +150,6 @@ task peak_calling {
         File summits_bed = "~{peaks_dir}/~{sample.sample_name}_summits.bed"
     }
 }
-
 
 task misc_tasks {
     input {
@@ -165,7 +168,6 @@ task misc_tasks {
 
     String hub_dir = "~{project_dir}/atacseq_hub"
     String sample_dir = "~{output_dir}/~{sample.sample_name}"
-    String slopped_tss = "~{output_dir}/~{sample.sample_name}/slopped_tss.bed"
     String tss_hist = "~{output_dir}/~{sample.sample_name}/~{sample.sample_name}.tss_histogram.csv"
     Int noise_lower = 100
     Int noise_upper = ( tss_slop * 2 ) - noise_lower
