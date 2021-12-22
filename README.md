@@ -1,3 +1,5 @@
+*This repository is obsolete and not maintained anymore. You can check out the new and extended ATAC-seq pipeline from [here](https://github.com/sreichl/atacseq_pipeline).*
+
 # ATAC-seq Data Processing Pipeline
 
 This pipeline is developed for processing raw/unaligned ATAC-seq data to generate peak calls, a QC report and motif 
